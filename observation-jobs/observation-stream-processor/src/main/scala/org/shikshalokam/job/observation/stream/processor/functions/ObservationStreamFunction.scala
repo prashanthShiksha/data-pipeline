@@ -162,7 +162,7 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
 
       themes.foreach { domain =>
         val domain_name = domain("name")
-        val level = domain("pointsBasedLevel")
+        val level = domain.getOrElse("pointsBasedLevel", 0)
 
         val insertDomainQuery =
           s"""INSERT INTO $domainTable (
