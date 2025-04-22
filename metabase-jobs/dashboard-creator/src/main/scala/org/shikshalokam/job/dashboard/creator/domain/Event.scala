@@ -16,4 +16,6 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def targetedState: String = readOrDefault("dashboardData.targetedState", "")
 
+  def solution_id: String = readOrDefault("solution_id", "")
+
 }

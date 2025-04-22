@@ -124,4 +124,22 @@ class PostgresUtil(dbUrl: String, dbUser: String, dbPassword: String) {
     }
   }
 
+  def executeQuery[T](query: String)(processResultSet: java.sql.ResultSet => T): T = {
+    val connection = getConnection
+    var statement: java.sql.Statement = null
+    var resultSet: java.sql.ResultSet = null
+    try {
+      statement = connection.createStatement()
+      resultSet = statement.executeQuery(query)
+      processResultSet(resultSet)
+    } catch {
+      case e: SQLException =>
+        println("Error executing query: " + e.getMessage)
+        throw e
+    } finally {
+      if (resultSet != null) resultSet.close()
+      if (statement != null) statement.close()
+      connection.close()
+    }
+  }
 }

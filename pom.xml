@@ -21,8 +21,10 @@
 
     <modules>
         <module>jobs-core</module>
-        <module>project-jobs</module>
-        <module>metabase-jobs</module>
+        <module>project-jobs/project-stream-processor</module>
+        <module>metabase-jobs/dashboard-creator</module>
+        <module>metabase-jobs/users-via-csv</module>
+        <module>observation-jobs/observation-stream-processor</module>
     </modules>
 
     <properties>
