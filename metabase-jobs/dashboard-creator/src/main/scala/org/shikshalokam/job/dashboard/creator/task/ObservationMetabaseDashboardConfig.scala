@@ -4,11 +4,11 @@ import com.typesafe.config.Config
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.TypeExtractor
 import org.shikshalokam.job.BaseJobConfig
-import org.shikshalokam.job.dashboard.creator.domain.Event
+import org.shikshalokam.job.dashboard.creator.domain.observationEvent
 
 class ObservationMetabaseDashboardConfig(override val config: Config) extends BaseJobConfig(config, "ObservationMetabaseDashboardJob") {
   println("inside ObservationMetabaseDashboardConfig class")
-  implicit val mapTypeInfo: TypeInformation[Event] = TypeExtractor.getForClass(classOf[Event])
+  implicit val mapTypeInfo: TypeInformation[observationEvent] = TypeExtractor.getForClass(classOf[observationEvent])
 
   // Kafka Topics Configuration
   val inputTopic: String = config.getString("kafka.observation.input.topic")
