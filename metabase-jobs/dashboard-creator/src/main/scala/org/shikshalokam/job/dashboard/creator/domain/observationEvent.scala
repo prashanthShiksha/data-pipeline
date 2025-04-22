@@ -9,4 +9,6 @@ class observationEvent(eventMap: java.util.Map[String, Any], partition: Int, off
   def reportType: String = readOrDefault[String]("reportType", "")
 
   def solution_id: String = readOrDefault("solution_id", "")
+
+  def chartType: List[String] = readOrDefault[List[String]]("chart_type", List.empty[String])
 }

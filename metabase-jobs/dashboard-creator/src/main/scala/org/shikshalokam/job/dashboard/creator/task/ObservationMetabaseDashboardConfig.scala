@@ -11,7 +11,7 @@ class ObservationMetabaseDashboardConfig(override val config: Config) extends Ba
   implicit val mapTypeInfo: TypeInformation[Event] = TypeExtractor.getForClass(classOf[Event])
 
   // Kafka Topics Configuration
-  val inputTopic: String = config.getString("kafka.input.topic")
+  val inputTopic: String = config.getString("kafka.observation.input.topic")
 
   // Parallelism
   val mlMetabaseParallelism: Int = config.getInt("task.sl.metabase.dashboard.parallelism")

@@ -363,7 +363,7 @@ class ProjectStreamFunction(config: ProjectStreamConfig)(implicit val mapTypeInf
         case Some(isPresent: Boolean) if isPresent =>
           println(s"$entityType details already exist.")
         case _ =>
-          if (entityType == "admin") {
+          if (entityType == "domain") {
             val insertQuery = s"INSERT INTO ${config.dashboard_metadata} (entity_type, entity_name, entity_id) VALUES ('$entityType', 'Admin', '$targetedId')"
             val affectedRows = postgresUtil.insertData(insertQuery)
             println(s"Inserted Admin details. Affected rows: $affectedRows")

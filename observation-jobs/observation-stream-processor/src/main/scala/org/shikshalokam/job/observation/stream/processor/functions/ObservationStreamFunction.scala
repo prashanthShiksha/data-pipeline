@@ -9,8 +9,10 @@ import org.shikshalokam.job.util.{PostgresUtil, ScalaJsonUtil}
 import org.shikshalokam.job.{BaseProcessFunction, Metrics}
 import org.slf4j.LoggerFactory
 
-import scala.collection.immutable._
-import scala.collection.{Seq, mutable}
+import java.time.format.DateTimeFormatter
+import java.time.{Instant, ZoneId}
+import java.util
+import scala.collection.Seq
 
 class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val mapTypeInfo: TypeInformation[Event], @transient var postgresUtil: PostgresUtil = null)
   extends BaseProcessFunction[Event, Event](config) {
@@ -328,7 +330,6 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
             val responseType = questionsMap.get("responseType").map(_.toString).getOrElse("")
 
             if (responseType == "matrix") {
-              // For matrix-type questions
               val parent_question_text: String = questionsMap.get("question") match {
                 case Some(qList: List[_]) =>
                   qList.collect { case q: String if q.nonEmpty => q }.headOption.getOrElse("")
@@ -339,13 +340,40 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
 
               processQuestion(responseType, questionsMap, payload, question_id, has_parent_question, parent_question_text)
             } else {
-              // For other question types
               processQuestion(responseType, questionsMap, payload, question_id, "false", null)
             }
           }
         case _ =>
           logger.error("Unexpected structure for answers field")
       }
+
+      /**
+       * Logic to populate kafka messages for creating metabase dashboard
+       */
+      val obsDashboardData = new java.util.HashMap[String, Any]()
+      obsDashboardData.put("chart_type", util.Arrays.asList("domain", "question")) // Add as a proper list
+      obsDashboardData.put("solution_id", s"$solution_id")
+
+      pushProjectDashboardEvents(obsDashboardData, context)
+    }
+
+
+    def pushProjectDashboardEvents(dashboardData: util.HashMap[String, Any], context: ProcessFunction[Event, Event]#Context): util.HashMap[String, AnyRef] = {
+      val objects = new util.HashMap[String, AnyRef]() {
+        put("_id", java.util.UUID.randomUUID().toString)
+        put("reportType", "Observation")
+        put("publishedAt", DateTimeFormatter
+          .ofPattern("yyyy-MM-dd HH:mm:ss")
+          .withZone(ZoneId.systemDefault())
+          .format(Instant.ofEpochMilli(System.currentTimeMillis())).asInstanceOf[AnyRef])
+        put("chart_type", dashboardData.get("chart_type").asInstanceOf[AnyRef])
+        put("solution_id", dashboardData.get("solution_id").asInstanceOf[AnyRef])
+      }
+      val event = ScalaJsonUtil.serialize(objects)
+      context.output(config.eventOutputTag, event)
+      println(s"----> Pushed new Kafka message to ${config.outputTopic} topic")
+      println(objects)
+      objects
     }
   }
 
