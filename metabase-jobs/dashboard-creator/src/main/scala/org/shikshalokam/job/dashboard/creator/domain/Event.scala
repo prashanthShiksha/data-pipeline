@@ -1,4 +1,4 @@
-package org.shikshalokam.job.dashboard.creator.domain
+package org.shikshalokam.job.observation.dashboard.creator.domain
 
 import org.shikshalokam.job.domain.reader.JobRequest
 
@@ -17,5 +17,7 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
   def targetedState: String = readOrDefault("dashboardData.targetedState", "")
 
   def solution_id: String = readOrDefault("solution_id", "")
+
+  def chartType: List[String] = readOrDefault[List[String]]("chart_type", List.empty[String])
 
 }

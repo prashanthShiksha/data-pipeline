@@ -23,7 +23,7 @@ class ObservationStreamConfig(override val config: Config) extends BaseJobConfig
   // Parallelism
   override val kafkaConsumerParallelism: Int = config.getInt("task.consumer.parallelism")
   val observationStreamParallelism: Int = config.getInt("task.sl.observations.stream.parallelism")
-  val metabaseDashboardParallelism: Int = config.getInt("task.sl.metabase.observations.dashboard.parallelism")
+  val metabaseDashboardParallelism: Int = config.getInt("task.sl.metabase.observation.dashboard.parallelism")
 
   // Consumers
   val observationStreamConsumer: String = "observation-stream-consumer"

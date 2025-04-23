@@ -1,10 +1,10 @@
-package org.shikshalokam.dashboard.creator.spec
+package org.shikshalokam.observation.dashboard.creator.spec
 
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.apache.flink.streaming.api.functions.source.SourceFunction.SourceContext
-import org.shikshalokam.dashboard.creator.fixture.EventsMock
 import org.shikshalokam.job.dashboard.creator.domain.Event
 import org.shikshalokam.job.util.JSONUtil
+import org.shikshalokam.observation.dashboard.creator.fixture.EventsMock
 
 
 class MetabaseEventSource extends SourceFunction[Event] {

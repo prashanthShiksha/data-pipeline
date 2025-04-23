@@ -34,4 +34,6 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def answers: Map[String, Any] = readOrDefault[Map[String, Any]]("answers", null)
 
+  def isRubricDriven : String = readOrDefault[String]("isRubricDriven", "false")
+
 }

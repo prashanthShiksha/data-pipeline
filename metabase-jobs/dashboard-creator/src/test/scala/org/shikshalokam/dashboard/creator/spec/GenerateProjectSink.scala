@@ -1,4 +1,4 @@
-package org.shikshalokam.dashboard.creator.spec
+package org.shikshalokam.observation.dashboard.creator.spec
 
 import org.apache.flink.streaming.api.functions.sink.SinkFunction
 import java.util
