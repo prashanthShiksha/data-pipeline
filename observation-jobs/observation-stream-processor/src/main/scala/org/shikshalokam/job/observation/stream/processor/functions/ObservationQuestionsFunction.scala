@@ -198,13 +198,11 @@ class ObservationQuestionsFunction(postgresUtil: PostgresUtil, config: Observati
   }
 
   private def insertQuestion(payload: Option[Map[String, Any]], question_id: String, solution_id: String, submission_id: String,
-                              user_id: String, submission_number: Integer, value: String, state_name: String, district_name: String,
-                              block_name: String, cluster_name: String, school_name: String, has_parent_question: String,
-                              parent_question_text: String, question_type: String, score: Option[Integer] = None): Unit = {
+                             user_id: String, submission_number: Integer, value: String, state_name: String, district_name: String,
+                             block_name: String, cluster_name: String, school_name: String, has_parent_question: String,
+                             parent_question_text: String, question_type: String, score: Option[Integer] = None): Unit = {
     val question = extractField(payload, "question")
     val labels = extractField(payload, "labels")
-
-    val scoreValue = score.map(_.toString).getOrElse("NULL")
 
     val insertQuestionQuery =
       s"""INSERT INTO $questionTable (
@@ -218,12 +216,11 @@ class ObservationQuestionsFunction(postgresUtil: PostgresUtil, config: Observati
 
     val questionParam = Seq(
       solution_id, submission_id, user_id, state_name, district_name, block_name, cluster_name, school_name, null,
-      question_id, question, value, scoreValue, has_parent_question, parent_question_text, null,
+      question_id, question, value, score.orNull, has_parent_question, parent_question_text, null,
       null, null, question_type, labels
     )
 
     postgresUtil.executePreparedUpdate(insertQuestionQuery, questionParam, questionTable, solution_id)
-
   }
 
   def textQuestionType(payload: Option[Map[String, Any]], question_id: String, solution_id: String, submission_id: String,
