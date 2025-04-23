@@ -170,13 +170,15 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
              |    block_name, cluster_name, school_name, record_type,
              |    domain, subdomain, criteria, record_value, max_scores, scores_achived
              |) VALUES (
-             |   '$solution_id', '$submission_id', '$user_id', '$submission_number', '$state_name', '$district_name',
-             |   '$block_name', '$cluster_name', '$school_name', 'domain', '$domain_name', NULL, NULL,
-             |   '$level', NULL, NULL
+             |   ?, ?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?
              |);
              |""".stripMargin
 
-        postgresUtil.insertData(insertDomainQuery)
+        val domainParams = Seq(solution_id, submission_id, user_id, submission_number, state_name, district_name,
+          block_name, cluster_name, school_name, "domain", domain_name, null, null, level, null, null)
+
+//        postgresUtil.insertData(insertDomainQuery)
+        postgresUtil.executePreparedUpdate(insertDomainQuery, domainParams, domainTable, solution_id)
 
         val maybeChildren = domain.get("children").map(_.asInstanceOf[List[Map[String, Any]]])
         val maybeCriteria = domain.get("criteria").map(_.asInstanceOf[List[Map[String, Any]]])
@@ -204,18 +206,20 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
                 criteria_event.find(c => c("_id") == criteriaId).foreach { crit =>
                   val criteria_name = crit("name")
                   val criteria_score = crit("score")
-                  val insertDomainQuery =
+                  val insertCriteriaQuery =
                     s"""INSERT INTO $domainTable (
                        |    solution_id, submission_id, user_id, submission_number, state_name, district_name,
                        |    block_name, cluster_name, school_name, record_type,
                        |    domain, subdomain, criteria, record_value, max_scores, scores_achived
                        |) VALUES (
-                       |        '$solution_id', '$submission_id', '$user_id', '$submission_number', '$state_name', '$district_name',
-                       |        '$block_name', '$cluster_name', '$school_name', 'criteria', '$domain_name', NULL, '$criteria_name',
-                       |        '$criteria_score', NULL, NULL
+                       |        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                        |);
                        |""".stripMargin
-                  postgresUtil.insertData(insertDomainQuery)
+                  val  criteriaParams = Seq(solution_id, submission_id, user_id, submission_number, state_name, district_name,
+                    block_name, cluster_name, school_name, "criteria", domain_name, null, criteria_name, criteria_score, null, null)
+
+                  postgresUtil.executePreparedUpdate(insertCriteriaQuery, criteriaParams, domainTable, solution_id)
+//                  postgresUtil.insertData(insertDomainQuery)
                 }
               }
             }
@@ -233,13 +237,16 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
            |    block_name, cluster_name, school_name, record_type,
            |    domain, subdomain, criteria, record_value, max_scores, scores_achived
            |) VALUES (
-           |        '$solution_id', '$submission_id', '$user_id', '$submission_number', '$state_name', '$district_name',
-           |        '$block_name', '$cluster_name', '$school_name', 'score', NULL, NULL, NULL,
-           |        NULL, '$max_score', '$score_achived'
+           |         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
            |);
            |""".stripMargin
 
-      postgresUtil.insertData(insertSchoolLevelScoreQuery)
+      val schoolLevelScoreParams = Seq(solution_id, submission_id, user_id, submission_number, state_name, district_name,
+        block_name, cluster_name, school_name, "score", null, null, null, null, max_score, score_achived)
+
+      postgresUtil.executePreparedUpdate(insertSchoolLevelScoreQuery, schoolLevelScoreParams, domainTable, solution_id)
+
+//      postgresUtil.insertData(insertSchoolLevelScoreQuery)
 
       /**
        * Extracting question data
