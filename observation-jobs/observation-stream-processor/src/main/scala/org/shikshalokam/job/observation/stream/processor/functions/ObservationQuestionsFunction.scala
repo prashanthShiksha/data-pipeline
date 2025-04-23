@@ -206,18 +206,24 @@ class ObservationQuestionsFunction(postgresUtil: PostgresUtil, config: Observati
 
     val scoreValue = score.map(_.toString).getOrElse("NULL")
 
-    val insertQuery =
+    val insertQuestionQuery =
       s"""INSERT INTO $questionTable (
          |    solution_id, submission_id, user_id, state_name, district_name, block_name, cluster_name, school_name, org_name,
          |    question_id, question_text, value, score, has_parent_question, parent_question_text, evidence,
          |    submitted_at, remarks, question_type, labels
          |) VALUES (
-         |   '$solution_id', '$submission_id', '$user_id', '$state_name', '$district_name', '$block_name', '$cluster_name', '$school_name', NULL,
-         |   '$question_id', '$question', '$value', $scoreValue, '$has_parent_question', '$parent_question_text', NULL, NULL, NULL, '$question_type', '$labels'
+         |   ?, ?, ?, ?', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
          |);
          |""".stripMargin
 
-    postgresUtil.insertData(insertQuery)
+    val questionParam = Seq(
+      solution_id, submission_id, user_id, state_name, district_name, block_name, cluster_name, school_name,
+      question_id, question, value, scoreValue, has_parent_question, parent_question_text, null,
+      null, null, question_type, labels
+    )
+
+    postgresUtil.executePreparedUpdate(insertQuestionQuery, questionParam, questionTable, solution_id)
+
   }
 
   def textQuestionType(payload: Option[Map[String, Any]], question_id: String, solution_id: String, submission_id: String,
