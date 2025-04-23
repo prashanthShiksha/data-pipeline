@@ -1,4 +1,4 @@
-package org.shikshalokam.job.observation.dashboard.creator.functions
+package org.shikshalokam.job.dashboard.creator.functions
 
 import com.fasterxml.jackson.databind.node.ArrayNode
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}

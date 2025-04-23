@@ -1,4 +1,4 @@
-package org.shikshalokam.job.observation.dashboard.creator.domain
+package org.shikshalokam.job.dashboard.creator.domain
 
 import org.shikshalokam.job.domain.reader.JobRequest
 

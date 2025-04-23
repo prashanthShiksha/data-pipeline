@@ -1,11 +1,11 @@
-package org.shikshalokam.job.observation.dashboard.creator.functions
+package org.shikshalokam.job.dashboard.creator.functions
 
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
-import org.shikshalokam.job.observation.dashboard.creator.domain.Event
-import org.shikshalokam.job.observation.dashboard.creator.task.MetabaseDashboardConfig
+import org.shikshalokam.job.dashboard.creator.domain.Event
+import org.shikshalokam.job.dashboard.creator.task.MetabaseDashboardConfig
 import org.shikshalokam.job.util.{MetabaseUtil, PostgresUtil}
 import org.shikshalokam.job.{BaseProcessFunction, Metrics}
 import scala.collection.mutable
@@ -373,7 +373,6 @@ class MetabaseDashboardFunction(config: MetabaseDashboardConfig)(implicit val ma
                 e.printStackTrace()
             }
         }
-
         println(s"***************** End of Processing the Metabase Project Dashboard *****************\n")
     }
   }

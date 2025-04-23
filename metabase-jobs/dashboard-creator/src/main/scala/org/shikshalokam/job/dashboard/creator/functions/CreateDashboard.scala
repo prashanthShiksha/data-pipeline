@@ -1,4 +1,4 @@
-package org.shikshalokam.job.observation.dashboard.creator.functions
+package org.shikshalokam.job.dashboard.creator.functions
 
 import org.shikshalokam.job.util.{MetabaseUtil, PostgresUtil}
 import org.shikshalokam.job.util.JSONUtil.mapper
