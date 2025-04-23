@@ -212,12 +212,12 @@ class ObservationQuestionsFunction(postgresUtil: PostgresUtil, config: Observati
          |    question_id, question_text, value, score, has_parent_question, parent_question_text, evidence,
          |    submitted_at, remarks, question_type, labels
          |) VALUES (
-         |   ?, ?, ?, ?', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+         |   ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
          |);
          |""".stripMargin
 
     val questionParam = Seq(
-      solution_id, submission_id, user_id, state_name, district_name, block_name, cluster_name, school_name,
+      solution_id, submission_id, user_id, state_name, district_name, block_name, cluster_name, school_name, null,
       question_id, question, value, scoreValue, has_parent_question, parent_question_text, null,
       null, null, question_type, labels
     )
