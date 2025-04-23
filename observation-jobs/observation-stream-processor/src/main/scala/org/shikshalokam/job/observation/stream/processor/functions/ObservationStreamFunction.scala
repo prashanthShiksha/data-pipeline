@@ -270,7 +270,7 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
       val questionsFunction = new ObservationQuestionsFunction(postgresUtil, config, questionTable)
       val answersKey = event.answers
 
-      def processQuestion(responseType: String, questionsMap: Map[String, Any], payload: Option[Map[String, Any]], question_id: String, has_parent_question: String, parent_question_text: String): Unit = {
+      def processQuestion(responseType: String, questionsMap: Map[String, Any], payload: Option[Map[String, Any]], question_id: String, has_parent_question: Boolean, parent_question_text: String): Unit = {
         val value: String = questionsMap.get("value") match {
           case Some(v: String) => v
           case Some(v: Int) => v.toString
@@ -343,11 +343,11 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
                 case Some(q: String) => q
                 case _ => ""
               }
-              val has_parent_question = if (parent_question_text.nonEmpty) "true" else "false"
+              val has_parent_question: Boolean = parent_question_text.nonEmpty
 
               processQuestion(responseType, questionsMap, payload, question_id, has_parent_question, parent_question_text)
             } else {
-              processQuestion(responseType, questionsMap, payload, question_id, "false", null)
+              processQuestion(responseType, questionsMap, payload, question_id, false, null)
             }
           }
         case _ =>
