@@ -372,7 +372,7 @@ class MetabaseDashboardFunction(config: MetabaseDashboardConfig)(implicit val ma
               val schoolnameId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, questionTable, "school_name", postgresUtil, createDashboardQuery)
               val questionCardIdList = UpdateQuestionJsonFiles.ProcessAndUpdateJsonFiles(collectionId, databaseId, dashboardId, statenameId, districtnameId, schoolnameId, questionTable, metabaseUtil, postgresUtil, report_config)
               val questionIdsString = "[" + questionCardIdList.mkString(",") + "]"
-              val parametersQuery: String = s"SELECT config FROM $report_config WHERE dashboard_name = 'Domain' AND question_type = 'Domain-Parameter'"
+              val parametersQuery: String = s"SELECT config FROM $report_config WHERE dashboard_name = 'Question' AND question_type = 'Question-Parameter'"
               UpdateParameters.UpdateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil)
               val updateTableQuery = s"UPDATE $metaDataTable SET  collection_id = '$collectionId', dashboard_id = '$dashboardId', question_ids = '$questionIdsString', status = 'Success', error_message = '' WHERE entity_id = '$solution_id';"
               postgresUtil.insertData(updateTableQuery)
