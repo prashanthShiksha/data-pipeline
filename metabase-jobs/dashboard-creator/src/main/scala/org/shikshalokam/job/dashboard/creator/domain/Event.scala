@@ -22,7 +22,7 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def isRubric: String = {
     readOrDefault[Any]("isRubricDriven", false) match {
-      case b: Boolean => b.toString
+      case b: Boolean => if (b) "true" else "false"
       case s: String  => s
       case _           => "false"
     }
