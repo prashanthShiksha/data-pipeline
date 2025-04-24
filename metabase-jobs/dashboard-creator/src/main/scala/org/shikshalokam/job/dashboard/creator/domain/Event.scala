@@ -20,4 +20,14 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def chartType: List[String] = readOrDefault[List[String]]("chart_type", List.empty[String])
 
+  def isRubric: String = {
+    readOrDefault[Any]("isRubricDriven", false) match {
+      case b: Boolean => b.toString
+      case s: String  => s
+      case _           => "false"
+    }
+  }
+
+  def solutionName: String = readOrDefault("solutionName", "")
+
 }
