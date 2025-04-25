@@ -37,13 +37,17 @@ object UpdateDomainJsonFiles {
               if (configJson != null) {
                 val chartName = Option(configJson.path("questionCard").path("name").asText()).getOrElse("Unknown Chart")
                 val updatedQuestionCard = updateQuestionCardJsonValues(configJson, collectionId, statenameId, districtnameId, schoolId, clusterId, domainId, subDomainId, criteriaId, databaseId)
+                println(s"updatedQuestionCard: $updatedQuestionCard")
                 val finalQuestionCard = updatePostgresDatabaseQuery(updatedQuestionCard, domain, if (isDomain) domainOrCriteriaName else "", if (!isDomain) domainOrCriteriaName else "")
+                println(s"finalQusestionCard: $finalQuestionCard")
                 val cardId = mapper.readTree(metabaseUtil.createQuestionCard(finalQuestionCard.toString)).path("id").asInt()
                 println(s">>>>>>>>> Successfully created question card with card_id: $cardId for $chartName")
                 questionCardId.append(cardId)
                 val updatedDashCard = updateQuestionIdInDashCard(configJson, cardId, newRow, newCol)
+                println(s"updatedDashCard: $updatedDashCard")
                 newCol += configJson.path("dashCards").path("size_y").asInt() + 1
-                AddQuestionCards.appendDashCardToDashboard(metabaseUtil, updatedDashCard, dashboardId)
+                val finalOutput = AddQuestionCards.appendDashCardToDashboard(metabaseUtil, updatedDashCard, dashboardId)
+                println(s"finalOutput: $finalOutput")
               }
             case None => println("Key 'config' not found in the result row.")
           }
