@@ -10,12 +10,12 @@ import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
 object UpdateDomainJsonFiles {
-  def ProcessAndUpdateJsonFiles(reportConfigQuery: String, collectionId: Int, databaseId: Int, dashboardId: Int, statenameId: Int, districtnameId: Int, schoolId: Int, domain: String, metabaseUtil: MetabaseUtil, postgresUtil: PostgresUtil, report_config: String): ListBuffer[Int] = {
+  def ProcessAndUpdateJsonFiles(reportConfigQuery: String, collectionId: Int, databaseId: Int, dashboardId: Int, statenameId: Int, districtnameId: Int, schoolId: Int, clusterId: Int, domainId: Int, subDomainId: Int, criteriaId: Int, domain: String, metabaseUtil: MetabaseUtil, postgresUtil: PostgresUtil, report_config: String): ListBuffer[Int] = {
     println(s"---------------started processing ProcessAndUpdateJsonFiles function----------------")
     val questionCardId = ListBuffer[Int]()
     val objectMapper = new ObjectMapper()
 
-    def processJsonFiles(collectionId: Int, databaseId: Int, dashboardId: Int, statenameId: Int, districtnameId: Int, schoolId: Int, report_config: String): Unit = {
+    def processJsonFiles(collectionId: Int, databaseId: Int, dashboardId: Int, statenameId: Int, districtnameId: Int, schoolId: Int, clusterId: Int, domainId: Int, subDomainId: Int, criteriaId: Int, report_config: String): Unit = {
       val queries = Map(
         "domainQuery" -> s"""SELECT distinct(domain) FROM "$domain" WHERE domain is not null ORDER BY domain;""",
         "criteriaQuery" -> s"""SELECT distinct(criteria) FROM "$domain" WHERE criteria is not null;""",
@@ -36,7 +36,7 @@ object UpdateDomainJsonFiles {
               val configJson = objectMapper.readTree(queryValue.getValue)
               if (configJson != null) {
                 val chartName = Option(configJson.path("questionCard").path("name").asText()).getOrElse("Unknown Chart")
-                val updatedQuestionCard = updateQuestionCardJsonValues(configJson, collectionId, statenameId, districtnameId, schoolId, databaseId)
+                val updatedQuestionCard = updateQuestionCardJsonValues(configJson, collectionId, statenameId, districtnameId, schoolId, clusterId, domainId, subDomainId, criteriaId, databaseId)
                 val finalQuestionCard = updatePostgresDatabaseQuery(updatedQuestionCard, domain, if (isDomain) domainOrCriteriaName else "", if (!isDomain) domainOrCriteriaName else "")
                 val cardId = mapper.readTree(metabaseUtil.createQuestionCard(finalQuestionCard.toString)).path("id").asInt()
                 println(s">>>>>>>>> Successfully created question card with card_id: $cardId for $chartName")
@@ -126,7 +126,7 @@ object UpdateDomainJsonFiles {
       }.toOption
     }
 
-    def updateQuestionCardJsonValues(configJson: JsonNode, collectionId: Int, statenameId: Int, districtnameId: Int, schoolId: Int, databaseId: Int): JsonNode = {
+    def updateQuestionCardJsonValues(configJson: JsonNode, collectionId: Int, statenameId: Int, districtnameId: Int, schoolId: Int, clusterId: Int, domainId: Int, subDomainId: Int, criteriaId: Int, databaseId: Int): JsonNode = {
       try {
         val configObjectNode = configJson.deepCopy().asInstanceOf[ObjectNode]
         Option(configObjectNode.get("questionCard")).foreach { questionCard =>
@@ -140,7 +140,11 @@ object UpdateDomainJsonFiles {
                 val params = Map(
                   "state_param" -> statenameId,
                   "district_param" -> districtnameId,
-                  "school_param" -> schoolId
+                  "school_param" -> schoolId,
+                  "cluster_param" -> clusterId,
+                  "domain_param" -> domainId,
+                  "subdomain_param" -> subDomainId,
+                  "criteria_param" -> criteriaId
                 )
                 params.foreach { case (paramName, paramId) =>
                   Option(templateTags.get(paramName)).foreach { paramNode =>
@@ -195,7 +199,7 @@ object UpdateDomainJsonFiles {
       }
     }
 
-    processJsonFiles(collectionId, databaseId, dashboardId, statenameId, districtnameId, schoolId, report_config)
+    processJsonFiles(collectionId, databaseId, dashboardId, statenameId, districtnameId, schoolId, clusterId, domainId, subDomainId, criteriaId, report_config)
     println(s"---------------processed ProcessAndUpdateJsonFiles function----------------")
     questionCardId
   }

@@ -319,38 +319,40 @@ class MetabaseDashboardFunction(config: MetabaseDashboardConfig)(implicit val ma
       case "Observation" =>
         chartType.asInstanceOf[List[String]].foreach {
           case ("domain") =>
-            if (isRubric == "true") {
-              println("Executing domain part...")
-              try {
-                val solutionName: String = event.solutionName
-                val collectionName: String = s"Observation Domain Collection[$solutionName]"
-                val dashboardName: String = s"Observation Domain Report[$solutionName]"
-                val groupName: String = s"${solutionName}_Domain_Program_Manager"
-                val createDashboardQuery = s"UPDATE $metaDataTable SET status = 'Failed',error_message = 'errorMessage'  WHERE entity_id = '$solution_id';"
-                val collectionId: Int = CreateDashboard.checkAndCreateCollection(collectionName, s"${solution_id}_domain Report", metabaseUtil, postgresUtil, createDashboardQuery)
-                val dashboardId: Int = CreateDashboard.checkAndCreateDashboard(collectionId, dashboardName, metabaseUtil, postgresUtil, createDashboardQuery)
-                val databaseId: Int = CreateDashboard.getDatabaseId(metabaseDatabase, metabaseUtil)
-                metabaseUtil.syncDatabaseAndRescanValues(databaseId)
-                val statenameId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "state_name", postgresUtil, createDashboardQuery)
-                val districtnameId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "district_name", postgresUtil, createDashboardQuery)
-                metabaseUtil.updateColumnCategory(statenameId,"State")
-                metabaseUtil.updateColumnCategory(districtnameId,"City")
-                val schoolnameId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "school_name", postgresUtil, createDashboardQuery)
-                val reportConfigQuery: String = s"SELECT question_type, config FROM $report_config WHERE dashboard_name = 'Domain' AND report_name = 'Domain-Report';"
-                val questionCardIdList = UpdateDomainJsonFiles.ProcessAndUpdateJsonFiles(reportConfigQuery, collectionId, databaseId, dashboardId, statenameId, districtnameId, schoolnameId, domainTable, metabaseUtil, postgresUtil, report_config)
-                val questionIdsString = "[" + questionCardIdList.mkString(",") + "]"
-                val parametersQuery: String = s"SELECT config FROM $report_config WHERE dashboard_name = 'Domain' AND question_type = 'Domain-Parameter'"
-                UpdateParameters.UpdateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil)
-                val updateTableQuery = s"UPDATE $metaDataTable SET  collection_id = '$collectionId', dashboard_id = '$dashboardId', question_ids = '$questionIdsString', status = 'Success', error_message = '' WHERE entity_id = '$solution_id';"
+            println("Executing domain part...")
+            try {
+              val solutionName: String = event.solutionName
+              val collectionName: String = s"Observation Domain Collection[$solutionName]"
+              val dashboardName: String = s"Observation Domain Report[$solutionName]"
+              val groupName: String = s"${solutionName}_Domain_Program_Manager"
+              val createDashboardQuery = s"UPDATE $metaDataTable SET status = 'Failed',error_message = 'errorMessage'  WHERE entity_id = '$solution_id';"
+              val collectionId: Int = CreateDashboard.checkAndCreateCollection(collectionName, s"${solution_id}_domain Report", metabaseUtil, postgresUtil, createDashboardQuery)
+              val dashboardId: Int = CreateDashboard.checkAndCreateDashboard(collectionId, dashboardName, metabaseUtil, postgresUtil, createDashboardQuery)
+              val databaseId: Int = CreateDashboard.getDatabaseId(metabaseDatabase, metabaseUtil)
+              metabaseUtil.syncDatabaseAndRescanValues(databaseId)
+              val statenameId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "state_name", postgresUtil, createDashboardQuery)
+              val districtnameId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "district_name", postgresUtil, createDashboardQuery)
+              metabaseUtil.updateColumnCategory(statenameId,"State")
+              metabaseUtil.updateColumnCategory(districtnameId,"City")
+              val schoolnameId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "school_name", postgresUtil, createDashboardQuery)
+              val clusterId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "cluster_name", postgresUtil, createDashboardQuery)
+              val domainId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "domain", postgresUtil, createDashboardQuery)
+              val subDomainId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "subdomain", postgresUtil, createDashboardQuery)
+              val criteriaId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "criteria", postgresUtil, createDashboardQuery)
+              val reportConfigQuery: String = s"SELECT question_type, config FROM $report_config WHERE dashboard_name = 'Domain' AND report_name = 'Domain-Report';"
+              val questionCardIdList = UpdateDomainJsonFiles.ProcessAndUpdateJsonFiles(reportConfigQuery, collectionId, databaseId, dashboardId, statenameId, districtnameId, schoolnameId, clusterId, domainId, subDomainId ,criteriaId, domainTable, metabaseUtil, postgresUtil, report_config)
+              val questionIdsString = "[" + questionCardIdList.mkString(",") + "]"
+              val parametersQuery: String = s"SELECT config FROM $report_config WHERE dashboard_name = 'Domain' AND question_type = 'Domain-Parameter'"
+              UpdateParameters.UpdateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil)
+              val updateTableQuery = s"UPDATE $metaDataTable SET  collection_id = '$collectionId', dashboard_id = '$dashboardId', question_ids = '$questionIdsString', status = 'Success', error_message = '' WHERE entity_id = '$solution_id';"
+              postgresUtil.insertData(updateTableQuery)
+              CreateAndAssignGroup.createGroupToDashboard(metabaseUtil, groupName, collectionId)
+            } catch {
+              case e: Exception =>
+                val updateTableQuery = s"UPDATE $metaDataTable SET status = 'Failed',error_message = '${e.getMessage}'  WHERE entity_id = '$solution_id';"
                 postgresUtil.insertData(updateTableQuery)
-                CreateAndAssignGroup.createGroupToDashboard(metabaseUtil, groupName, collectionId)
-              } catch {
-                case e: Exception =>
-                  val updateTableQuery = s"UPDATE $metaDataTable SET status = 'Failed',error_message = '${e.getMessage}'  WHERE entity_id = '$solution_id';"
-                  postgresUtil.insertData(updateTableQuery)
-                  println(s"An error occurred: ${e.getMessage}")
-                  e.printStackTrace()
-              }
+                println(s"An error occurred: ${e.getMessage}")
+                e.printStackTrace()
             }
 
           case ("question") =>
@@ -367,10 +369,11 @@ class MetabaseDashboardFunction(config: MetabaseDashboardConfig)(implicit val ma
               metabaseUtil.syncDatabaseAndRescanValues(databaseId)
               val statenameId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, questionTable, "state_name", postgresUtil, createDashboardQuery)
               val districtnameId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, questionTable, "district_name", postgresUtil, createDashboardQuery)
+              val clusterId : Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, questionTable, "cluster_name", postgresUtil, createDashboardQuery)
               metabaseUtil.updateColumnCategory(statenameId,"State")
               metabaseUtil.updateColumnCategory(districtnameId,"City")
               val schoolnameId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, questionTable, "school_name", postgresUtil, createDashboardQuery)
-              val questionCardIdList = UpdateQuestionJsonFiles.ProcessAndUpdateJsonFiles(collectionId, databaseId, dashboardId, statenameId, districtnameId, schoolnameId, questionTable, metabaseUtil, postgresUtil, report_config)
+              val questionCardIdList = UpdateQuestionJsonFiles.ProcessAndUpdateJsonFiles(collectionId, databaseId, dashboardId, statenameId, districtnameId, schoolnameId, clusterId, questionTable, metabaseUtil, postgresUtil, report_config)
               val questionIdsString = "[" + questionCardIdList.mkString(",") + "]"
               val parametersQuery: String = s"SELECT config FROM $report_config WHERE dashboard_name = 'Question' AND question_type = 'Question-Parameter'"
               UpdateParameters.UpdateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil)

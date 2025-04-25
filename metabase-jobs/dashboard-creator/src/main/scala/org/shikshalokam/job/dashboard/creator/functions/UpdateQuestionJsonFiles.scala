@@ -10,12 +10,12 @@ import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
 object UpdateQuestionJsonFiles {
-  def ProcessAndUpdateJsonFiles(collectionId: Int, databaseId: Int, dashboardId: Int, statenameId: Int, districtnameId: Int, schoolId: Int, question: String, metabaseUtil: MetabaseUtil, postgresUtil: PostgresUtil, report_config: String): ListBuffer[Int] = {
+  def ProcessAndUpdateJsonFiles(collectionId: Int, databaseId: Int, dashboardId: Int, statenameId: Int, districtnameId: Int, schoolId: Int, clusterId: Int, question: String, metabaseUtil: MetabaseUtil, postgresUtil: PostgresUtil, report_config: String): ListBuffer[Int] = {
     println(s"---------------started processing ProcessAndUpdateJsonFiles function----------------")
     val questionCardId = ListBuffer[Int]()
     val objectMapper = new ObjectMapper()
 
-    def processJsonFiles(collectionId: Int, databaseId: Int, dashboardId: Int, statenameId: Int, districtnameId: Int, schoolId: Int, question: String, report_config: String): Unit = {
+    def processJsonFiles(collectionId: Int, databaseId: Int, dashboardId: Int, statenameId: Int, districtnameId: Int, schoolId: Int, clusterId: Int, question: String, report_config: String): Unit = {
       val queries = Map(
         "nonMatrix" -> s"""SELECT distinct(question_id),question_text,question_type FROM "$question" WHERE has_parent_question = 'false'""",
         "matrix" -> s"""SELECT distinct(question_id),question_type,question_text, parent_question_text FROM "$question" WHERE has_parent_question = 'true'""",
@@ -68,7 +68,7 @@ object UpdateQuestionJsonFiles {
             case Some(queryValue: PGobject) =>
               val configJson = objectMapper.readTree(queryValue.getValue)
               Option(configJson).foreach { json =>
-                val updatedQuestionCard = updateQuestionCardJsonValues(json, collectionId, statenameId, districtnameId, schoolId, databaseId)
+                val updatedQuestionCard = updateQuestionCardJsonValues(json, collectionId, statenameId, districtnameId, schoolId, clusterId, databaseId)
                 val finalQuestionCard = updatePostgresDatabaseQuery(updatedQuestionCard, question, questionId)
                 val requestBody = finalQuestionCard.asInstanceOf[ObjectNode]
                 val cardId = mapper.readTree(metabaseUtil.createQuestionCard(requestBody.toString)).path("id").asInt()
@@ -145,7 +145,7 @@ object UpdateQuestionJsonFiles {
       }.toOption
     }
 
-    def updateQuestionCardJsonValues(configJson: JsonNode, collectionId: Int, statenameId: Int, districtnameId: Int, schoolId: Int, databaseId: Int): JsonNode = {
+    def updateQuestionCardJsonValues(configJson: JsonNode, collectionId: Int, statenameId: Int, districtnameId: Int, schoolId: Int, clusterId: Int, databaseId: Int): JsonNode = {
       try {
         val configObjectNode = configJson.deepCopy().asInstanceOf[ObjectNode]
         Option(configObjectNode.get("questionCard")).foreach { questionCard =>
@@ -159,7 +159,8 @@ object UpdateQuestionJsonFiles {
                 val params = Map(
                   "state_param" -> statenameId,
                   "district_param" -> districtnameId,
-                  "school_param" -> schoolId
+                  "school_param" -> schoolId,
+                  "cluster_param" -> clusterId
                 )
                 params.foreach { case (paramName, paramId) =>
                   Option(templateTags.get(paramName)).foreach { paramNode =>
@@ -213,7 +214,7 @@ object UpdateQuestionJsonFiles {
       }
     }
 
-    processJsonFiles(collectionId, databaseId, dashboardId, statenameId, districtnameId, schoolId, question, report_config)
+    processJsonFiles(collectionId, databaseId, dashboardId, statenameId, districtnameId, schoolId, clusterId, question, report_config)
     println(s"---------------processed ProcessAndUpdateJsonFiles function----------------")
     questionCardId
   }
