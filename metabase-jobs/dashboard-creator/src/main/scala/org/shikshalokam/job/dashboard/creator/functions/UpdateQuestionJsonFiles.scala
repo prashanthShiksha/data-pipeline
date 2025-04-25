@@ -24,7 +24,8 @@ object UpdateQuestionJsonFiles {
         "multiselect" -> s"SELECT * FROM $report_config WHERE dashboard_name = 'Question' AND question_type = 'multiselect-chart';",
         "numbers" -> s"SELECT * FROM $report_config WHERE dashboard_name = 'Question' AND question_type = 'number-chart';",
         "text" -> s"SELECT * FROM $report_config WHERE dashboard_name = 'Question' AND question_type = 'text-chart';",
-        "heading" -> s"SELECT * FROM $report_config WHERE dashboard_name = 'Question' AND question_type = 'heading';"
+        "heading" -> s"SELECT * FROM $report_config WHERE dashboard_name = 'Question' AND question_type = 'heading';",
+        "date" -> s"SELECT * FROM $report_config WHERE dashboard_name = 'Question' AND question_type = 'date-chart';"
       )
 
       val results = queries.map { case (key, query) => key -> postgresUtil.fetchData(query) }
@@ -60,6 +61,7 @@ object UpdateQuestionJsonFiles {
           case "multiselect" => "multiselect"
           case "number" => "numbers"
           case "text" => "text"
+          case "date" => "date"
           case _ => return
         }
 
