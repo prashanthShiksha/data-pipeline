@@ -34,14 +34,7 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def answers: Map[String, Any] = readOrDefault[Map[String, Any]]("answers", null)
 
-  def isRubric: String = {
-    val value = readOrDefault[Any]("isRubricDriven", false)
-    value match {
-      case b: Boolean => if (b) "true" else "false"
-      case s: String  => s
-      case _          => "false"
-    }
-  }
+  def isRubric: Boolean = readOrDefault[Boolean]("isRubricDriven", false)
 
   def solutionName : String = readOrDefault[String]("solutionInfo.name", "")
 }

@@ -62,8 +62,6 @@ class MetabaseDashboardFunction(config: MetabaseDashboardConfig)(implicit val ma
     println(s"questionTable: $questionTable")
     val chartType = event.chartType
     println(s"chartType: $chartType")
-    val isRubric = event.isRubric
-    print(s"isRubric: $isRubric")
 
     // Printing the targetedState ID
     println(s"Targeted State ID: $targetedStateId")
