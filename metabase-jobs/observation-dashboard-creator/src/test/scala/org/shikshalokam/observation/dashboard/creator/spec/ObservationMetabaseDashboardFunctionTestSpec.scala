@@ -1,4 +1,4 @@
-package org.shikshalokam.project.stream.processor.spec
+package org.shikshalokam.observation.dashboard.creator.spec
 
 import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.flink.api.common.typeinfo.TypeInformation
@@ -9,12 +9,11 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.shikshalokam.BaseTestSpec
 import org.shikshalokam.job.connector.FlinkKafkaConnector
-import org.shikshalokam.job.project.stream.processor.domain.Event
-import org.shikshalokam.job.project.stream.processor.task.{ProjectStreamConfig, ProjectStreamTask}
+import org.shikshalokam.job.observation.dashboard.creator.domain.Event
+import org.shikshalokam.job.observation.dashboard.creator.task.{ObservationMetabaseDashboardConfig, ObservationMetabaseDashboardTask}
 
 
-class ProjectStreamFunctionTestSpec extends BaseTestSpec {
-
+class ObservationMetabaseDashboardFunctionTestSpec extends BaseTestSpec {
   implicit val mapTypeInfo: TypeInformation[java.util.Map[String, AnyRef]] = TypeExtractor.getForClass(classOf[java.util.Map[String, AnyRef]])
   implicit val eventTypeInfo: TypeInformation[Event] = TypeExtractor.getForClass(classOf[Event])
   implicit val stringTypeInfo: TypeInformation[String] = TypeExtractor.getForClass(classOf[String])
@@ -28,7 +27,7 @@ class ProjectStreamFunctionTestSpec extends BaseTestSpec {
   val mockKafkaUtil: FlinkKafkaConnector = mock[FlinkKafkaConnector](Mockito.withSettings().serializable())
 
   val config: Config = ConfigFactory.load("test.conf")
-  val jobConfig: ProjectStreamConfig = new ProjectStreamConfig(config)
+  val jobConfig: ObservationMetabaseDashboardConfig = new ObservationMetabaseDashboardConfig(config)
 
 
   override protected def beforeAll(): Unit = {
@@ -44,14 +43,12 @@ class ProjectStreamFunctionTestSpec extends BaseTestSpec {
 
   def initialize() {
     when(mockKafkaUtil.kafkaJobRequestSource[Event](jobConfig.inputTopic))
-      .thenReturn(new ObservationEventSource)
-    when(mockKafkaUtil.kafkaStringSink(jobConfig.outputTopic))
-      .thenReturn(new GenerateProjectSink)
+      .thenReturn(new ObservationMetabaseEventSource)
+    when(mockKafkaUtil.kafkaStringSink(jobConfig.inputTopic)).thenReturn(new GenerateMetabaseDashboardSink)
   }
 
-  "Project Stream Job " should "execute successfully " in {
+  "Metabase Dashboard Creator Job " should "execute successfully " in {
     initialize()
-    new ProjectStreamTask(jobConfig, mockKafkaUtil).process()
+    new ObservationMetabaseDashboardTask(jobConfig, mockKafkaUtil).process()
   }
-
 }

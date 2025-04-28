@@ -9,11 +9,12 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.shikshalokam.BaseTestSpec
 import org.shikshalokam.job.connector.FlinkKafkaConnector
-import org.shikshalokam.job.project.stream.processor.domain.Event
-import org.shikshalokam.job.project.stream.processor.task.{ProjectStreamConfig, ProjectStreamTask}
+import org.shikshalokam.job.observation.stream.processor.domain.Event
+import org.shikshalokam.job.observation.stream.processor.task.{ObservationStreamConfig, ObservationStreamTask}
+import org.shikshalokam.obseravtion.stream.processor.spec.{GenerateObservationSink, ObservationEventSource}
 
 
-class ProjectStreamFunctionTestSpec extends BaseTestSpec {
+class ObservationStreamFunctionTestSpec extends BaseTestSpec {
 
   implicit val mapTypeInfo: TypeInformation[java.util.Map[String, AnyRef]] = TypeExtractor.getForClass(classOf[java.util.Map[String, AnyRef]])
   implicit val eventTypeInfo: TypeInformation[Event] = TypeExtractor.getForClass(classOf[Event])
@@ -28,7 +29,7 @@ class ProjectStreamFunctionTestSpec extends BaseTestSpec {
   val mockKafkaUtil: FlinkKafkaConnector = mock[FlinkKafkaConnector](Mockito.withSettings().serializable())
 
   val config: Config = ConfigFactory.load("test.conf")
-  val jobConfig: ProjectStreamConfig = new ProjectStreamConfig(config)
+  val jobConfig: ObservationStreamConfig = new ObservationStreamConfig(config)
 
 
   override protected def beforeAll(): Unit = {
@@ -46,12 +47,12 @@ class ProjectStreamFunctionTestSpec extends BaseTestSpec {
     when(mockKafkaUtil.kafkaJobRequestSource[Event](jobConfig.inputTopic))
       .thenReturn(new ObservationEventSource)
     when(mockKafkaUtil.kafkaStringSink(jobConfig.outputTopic))
-      .thenReturn(new GenerateProjectSink)
+      .thenReturn(new GenerateObservationSink)
   }
 
   "Project Stream Job " should "execute successfully " in {
     initialize()
-    new ProjectStreamTask(jobConfig, mockKafkaUtil).process()
+    new ObservationStreamTask(jobConfig, mockKafkaUtil).process()
   }
 
 }
