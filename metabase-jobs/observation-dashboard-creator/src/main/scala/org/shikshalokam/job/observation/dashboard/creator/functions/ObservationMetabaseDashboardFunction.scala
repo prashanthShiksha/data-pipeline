@@ -43,9 +43,6 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
 
     println(s"***************** Start of Processing the Metabase Dashboard Event with Id = ${event._id}*****************")
 
-    val targetedStateId = event.targetedState
-    val targetedProgramId = event.targetedProgram
-    val targetedDistrictId = event.targetedDistrict
     val admin = event.admin
     val metaDataTable = config.dashboard_metadata
     val report_config: String = config.report_config
@@ -59,11 +56,6 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
     println(s"chartType: $chartType")
     println(s"isRubric: ${event.isRubric}")
     println(s"solution_name : ${event.solutionName}")
-    // Printing the targetedState ID
-    println(s"Targeted State ID: $targetedStateId")
-    println(s"Targeted Program ID: $targetedProgramId")
-    println(s"Targeted District ID: $targetedDistrictId")
-    println(s"admin: $admin")
 
     event.reportType match {
       case "Observation" =>
@@ -91,7 +83,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
                 val domainId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "domain", postgresUtil, createDashboardQuery)
                 val subDomainId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "subdomain", postgresUtil, createDashboardQuery)
                 val criteriaId: Int = GetTableData.getTableMetadataId(databaseId, metabaseUtil, domainTable, "criteria", postgresUtil, createDashboardQuery)
-                val reportConfigQuery: String = s"SELECT question_type, config FROM $report_config WHERE dashboard_name = 'Domain' AND report_name = 'Domain-Report';"
+                val reportConfigQuery: String = s"SELECT question_type, config FROM $report_config WHERE dashboard_name = 'Domain' AND report_name = 'Test-Domain-Report';"
                 val questionCardIdList = UpdateDomainJsonFiles.ProcessAndUpdateJsonFiles(reportConfigQuery, collectionId, databaseId, dashboardId, statenameId, districtnameId, schoolnameId, clusterId, domainId, subDomainId ,criteriaId, domainTable, metabaseUtil, postgresUtil, report_config)
                 val questionIdsString = "[" + questionCardIdList.mkString(",") + "]"
                 val parametersQuery: String = s"SELECT config FROM $report_config WHERE dashboard_name = 'Domain' AND question_type = 'Domain-Parameter'"

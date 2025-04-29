@@ -44,7 +44,7 @@ class ProjectStreamFunctionTestSpec extends BaseTestSpec {
 
   def initialize() {
     when(mockKafkaUtil.kafkaJobRequestSource[Event](jobConfig.inputTopic))
-      .thenReturn(new ObservationEventSource)
+      .thenReturn(new ProjectEventSource)
     when(mockKafkaUtil.kafkaStringSink(jobConfig.outputTopic))
       .thenReturn(new GenerateProjectSink)
   }
