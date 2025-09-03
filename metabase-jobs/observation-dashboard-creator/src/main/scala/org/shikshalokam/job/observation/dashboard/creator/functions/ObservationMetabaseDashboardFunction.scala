@@ -258,7 +258,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
             val stateNameId: Int = getTheColumnId(databaseId, observationQuestionTable, "parent_one_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
             val districtNameId: Int = getTheColumnId(databaseId, observationQuestionTable, "parent_two_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
             val parametersQuery: String = s"SELECT config FROM $reportConfig WHERE dashboard_name = 'Observation' AND question_type = 'Observation-Question-Parameter'"
-            val (params, diffLevelDict, entityColumnName) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationQuestionTable, postgresUtil, createDashboardQuery, metabaseApiKey)
+            val (params, diffLevelDict, entityColumnName, is) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationQuestionTable, postgresUtil, createDashboardQuery, metabaseApiKey)
             val entityColumnId = if (entityColumnName.endsWith("_name")) {
               entityColumnName.replaceAll("_name$", "_id")
             } else {
@@ -291,13 +291,13 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
           if (parentCollectionId != -1) {
             val tabId: Int = tabIdMap.getOrElse(dashboardName, -1)
             val parametersQuery: String = s"SELECT config FROM $reportConfig WHERE dashboard_name = 'Observation' AND question_type = 'Observation-Question-Without-Rubric-Parameter'"
-            val (params, diffLevelDict, _) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationQuestionTable, postgresUtil, createDashboardQuery, metabaseApiKey)
+            val (params, diffLevelDict, _, isEntityTypeMatched) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationQuestionTable, postgresUtil, createDashboardQuery, metabaseApiKey)
             val stateNameId: Int = getTheColumnId(databaseId, observationQuestionTable, "parent_one_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
             val districtNameId: Int = getTheColumnId(databaseId, observationQuestionTable, "parent_two_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
             metabaseUtil.updateColumnCategory(stateNameId, "State")
             metabaseUtil.updateColumnCategory(districtNameId, "City")
             val questionCardIdList = UpdateWithoutRubricQuestionJsonFiles.ProcessAndUpdateJsonFiles(parentCollectionId, databaseId, dashboardId, tabId, observationQuestionTable, metabaseUtil, postgresUtil, reportConfig, params, diffLevelDict, evidenceBaseUrl)
-            UpdateParameters.UpdateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil, diffLevelDict)
+            UpdateParameters.UpdateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil, diffLevelDict, entityType, isEntityTypeMatched)
             questionCardIdList
           } else {
             println("Solution Collection Id returned -1")
@@ -319,7 +319,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
           val createDashboardQuery = s"UPDATE $metaDataTable SET status = 'Failed',error_message = 'errorMessage'  WHERE entity_id = '$targetedProgramId';"
           val tabId: Int = tabIdMap.getOrElse(dashboardName, -1)
           val parametersQuery: String = s"SELECT config FROM $reportConfig WHERE dashboard_name = 'Observation' AND question_type = 'Observation-Status-Parameter'"
-          val (params, diffLevelDict, _) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationStatusTable, postgresUtil, createDashboardQuery, metabaseApiKey)
+          val (params, diffLevelDict, _, isEntityTypeMatched) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationStatusTable, postgresUtil, createDashboardQuery, metabaseApiKey)
           val stateNameId: Int = getTheColumnId(databaseId, observationStatusTable, "parent_one_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
           val districtNameId: Int = getTheColumnId(databaseId, observationStatusTable, "parent_two_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
           metabaseUtil.updateColumnCategory(stateNameId, "State")
@@ -346,7 +346,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
           val createDashboardQuery = s"UPDATE $metaDataTable SET status = 'Failed',error_message = 'errorMessage'  WHERE entity_id = '$targetedProgramId';"
           val tabId: Int = tabIdMap.getOrElse(dashboardName, -1)
           val parametersQuery: String = s"SELECT config FROM $reportConfig WHERE dashboard_name = 'Observation' AND question_type = 'Observation-Domain-Parameter'"
-          val (params, diffLevelDict, entityColumnName) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationDomainTable, postgresUtil, createDashboardQuery, metabaseApiKey)
+          val (params, diffLevelDict, entityColumnName, isEntityTypeMatched) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationDomainTable, postgresUtil, createDashboardQuery, metabaseApiKey)
           val stateNameId: Int = getTheColumnId(databaseId, observationDomainTable, "parent_one_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
           val districtNameId: Int = getTheColumnId(databaseId, observationDomainTable, "parent_two_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
           val entityColumnId = if (entityColumnName.endsWith("_name")) {
@@ -364,7 +364,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
             "${entityType}" -> s"""$entityType"""
           )
           val questionCardIdList = UpdateStatusJsonFiles.ProcessAndUpdateJsonFiles(reportConfigQuery, parentCollectionId, databaseId, dashboardId, tabId, metabaseUtil, postgresUtil, params, replacements, diffLevelDict, entityType)
-          UpdateParameters.UpdateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil, diffLevelDict)
+          UpdateParameters.UpdateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil, diffLevelDict, entityType, isEntityTypeMatched)
           questionCardIdList
         }
         catch {
@@ -397,7 +397,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
 
           def TableBasedDashboardCreationCommonSteps(tabIdMap: Map[String, Int], databaseId: Int, dashboardName: String, dashboardId: Int, parametersQuery: String, reportConfigQuery: String, replacements: Map[String, String], observationTable: String): ListBuffer[Int] = {
             val tabId: Int = tabIdMap.getOrElse(dashboardName, -1)
-            val (params, diffLevelDict, _) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationTable, postgresUtil, createDashboardQuery, metabaseApiKey)
+            val (params, diffLevelDict, _, _) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationTable, postgresUtil, createDashboardQuery, metabaseApiKey)
             val stateNameId: Int = getTheColumnId(databaseId, observationTable, "parent_one_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
             val districtNameId: Int = getTheColumnId(databaseId, observationTable, "parent_two_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
             metabaseUtil.updateColumnCategory(stateNameId, "State")
@@ -489,40 +489,67 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
         }
       }
 
-      def extractParameterDicts(parametersQuery: String, entityType: String, databaseId: Int, metabaseUtil: MetabaseUtil, tableName: String, postgresUtil: PostgresUtil, createDashboardQuery: String, metabaseApiKey: String): (Map[String, Int], ListMap[String, String], String) = {
+      def extractParameterDicts(parametersQuery: String, entityType: String, databaseId: Int, metabaseUtil: MetabaseUtil, tableName: String, postgresUtil: PostgresUtil, createDashboardQuery: String, metabaseApiKey: String): (Map[String, Int], ListMap[String, String], String, Boolean) = {
+
         val DashboardParameter = postgresUtil.fetchData(parametersQuery) match {
           case List(map: Map[_, _]) => map.get("config").map(_.toString).getOrElse("")
           case _ => ""
         }
+
         val mapper = new ObjectMapper()
         val arrayNode = mapper.readTree(DashboardParameter)
-        val removeParamsAfterThis: String = arrayNode.elements().asScala
-          .find(node => Option(node.get("entity_type")).exists(_.asText() == entityType))
-          .flatMap(node => Option(node.get("param")).map(_.asText()))
-          .getOrElse("")
+
+        val matchedNodeOpt = arrayNode.elements().asScala.find(
+          node => Option(node.get("entity_type")).exists(_.asText() == entityType)
+        )
+
         val completeMapOfParamAndColumnName: ListMap[String, String] = ListMap(
           arrayNode.elements().asScala
             .map(node => node.get("param").asText() -> node.get("columnName").asText())
             .toSeq: _*
         )
 
-        val entityColumnName: String = completeMapOfParamAndColumnName.getOrElse(removeParamsAfterThis, "")
+        val (mapOfParamsAfterRemovingBelowEntityParams, _, entityColumnName, isEntityTypeMatched) =
+          matchedNodeOpt match {
+            // Case 1: entityType matches
+            case Some(node) =>
+              val removeParam = node.get("param").asText()
+              val entityCol = completeMapOfParamAndColumnName.getOrElse(removeParam, "")
 
-        def getTheMapOfParamsAfterRemovingTheEntityParam(completeMapOfParamAndColumnName: ListMap[String, String], removeParamsAfterThis: String): ListMap[String, String] = {
-          val keys = completeMapOfParamAndColumnName.keys.toList
-          val idx = keys.indexOf(removeParamsAfterThis)
-          if (idx == -1) completeMapOfParamAndColumnName
-          else ListMap(keys.drop(idx).map(k => k -> completeMapOfParamAndColumnName(k)): _*)
-        }
+              val keys = completeMapOfParamAndColumnName.keys.toList
+              val idx = keys.indexOf(removeParam)
 
-        val mapOfParamsAfterRemovingBelowEntityParams = getTheMapOfParamsAfterRemovingTheEntityParam(completeMapOfParamAndColumnName, removeParamsAfterThis)
-        val params: Map[String, Int] = mapOfParamsAfterRemovingBelowEntityParams.map { case (key, columnName) =>
-          key -> getTheColumnId(databaseId, tableName, columnName, metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
-        }
+              val filtered =
+                if (idx == -1) completeMapOfParamAndColumnName
+                else ListMap(keys.drop(idx).map(k => k -> completeMapOfParamAndColumnName(k)): _*)
+
+              val filteredWithoutEntity = filtered.filterNot { case (k, _) => k == "entity_param" }
+
+              (filteredWithoutEntity, removeParam, entityCol, true)
+
+            // Case 2: entityType not found
+            case None =>
+              val keepKeys = Seq("domain_param", "criteria_param", "entity_param")
+              val filtered = ListMap(keepKeys.flatMap(k =>
+                completeMapOfParamAndColumnName.get(k).map(v => k -> v)
+              ): _*)
+
+              (filtered, "entity_param", "entity_name", true)
+          }
+
+        val params: Map[String, Int] =
+          mapOfParamsAfterRemovingBelowEntityParams.map { case (key, columnName) =>
+            key -> getTheColumnId(databaseId, tableName, columnName, metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
+          }
+
         val mapOfRemovedParams: ListMap[String, String] =
-          if (mapOfParamsAfterRemovingBelowEntityParams.isEmpty) ListMap.empty
-          else completeMapOfParamAndColumnName.filterNot { case (k, v) => mapOfParamsAfterRemovingBelowEntityParams.contains(k) && mapOfParamsAfterRemovingBelowEntityParams(k) == v }
-        (params, mapOfRemovedParams, entityColumnName)
+          completeMapOfParamAndColumnName.filterNot {
+            case (k, v) =>
+              mapOfParamsAfterRemovingBelowEntityParams.contains(k) &&
+                mapOfParamsAfterRemovingBelowEntityParams(k) == v
+          }
+
+        (params, mapOfRemovedParams, entityColumnName, isEntityTypeMatched)
       }
 
       def validateCollection(collectionName: String, reportFor: String, reportId: Option[String] = None): (Boolean, Int) = {

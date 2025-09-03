@@ -15,7 +15,8 @@
       "c32c8fc5",
       "74a10335",
       "9e5a09bh",
-      "cc7a4cd7"
+      "cc7a4cd7",
+      "ffbf9c98"
     ]
   },
   {
@@ -53,7 +54,8 @@
       "c32c8fc5",
       "74a10335",
       "cc7a4cd7",
-      "6e5c08dc"
+      "6e5c08dc",
+      "ffbf9c98"
     ]
   },
   {
@@ -72,7 +74,8 @@
       "c32c8fc5",
       "9e5a09bh",
       "cc7a4cd7",
-      "6e5c08dc"
+      "6e5c08dc",
+      "ffbf9c98"
     ]
   },
   {
@@ -91,7 +94,8 @@
       "74a10335",
       "9e5a09bh",
       "cc7a4cd7",
-      "6e5c08dc"
+      "6e5c08dc",
+      "ffbf9c98"
     ]
   },
   {
@@ -109,7 +113,28 @@
       "74a10335",
       "9e5a09bh",
       "cc7a4cd7",
-      "6e5c08dc"
+      "6e5c08dc",
+      "ffbf9c98"
+    ]
+  },
+  {
+    "name": "Select $entity_type",
+    "slug": "select_entity_type",
+    "columnName": "entity_name",
+    "param": "entity_param",
+    "order": 10,
+    "id": "ffbf9c98",
+    "type": "string/=",
+    "sectionId": "string",
+    "isMultiSelect": false,
+    "filteringParameters": [
+      "6e5c08dc",
+      "cc7a4cd7",
+      "9e5a09bh",
+      "74a10335",
+      "c32c8fc5",
+      "fbca1e77",
+      "ffbf9c99"
     ]
   }
 ]
