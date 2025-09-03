@@ -258,7 +258,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
             val stateNameId: Int = getTheColumnId(databaseId, observationQuestionTable, "parent_one_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
             val districtNameId: Int = getTheColumnId(databaseId, observationQuestionTable, "parent_two_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
             val parametersQuery: String = s"SELECT config FROM $reportConfig WHERE dashboard_name = 'Observation' AND question_type = 'Observation-Question-Parameter'"
-            val (params, diffLevelDict, entityColumnName, is) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationQuestionTable, postgresUtil, createDashboardQuery, metabaseApiKey)
+            val (params, diffLevelDict, entityColumnName, _) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationQuestionTable, postgresUtil, createDashboardQuery, metabaseApiKey)
             val entityColumnId = if (entityColumnName.endsWith("_name")) {
               entityColumnName.replaceAll("_name$", "_id")
             } else {
@@ -319,7 +319,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
           val createDashboardQuery = s"UPDATE $metaDataTable SET status = 'Failed',error_message = 'errorMessage'  WHERE entity_id = '$targetedProgramId';"
           val tabId: Int = tabIdMap.getOrElse(dashboardName, -1)
           val parametersQuery: String = s"SELECT config FROM $reportConfig WHERE dashboard_name = 'Observation' AND question_type = 'Observation-Status-Parameter'"
-          val (params, diffLevelDict, _, isEntityTypeMatched) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationStatusTable, postgresUtil, createDashboardQuery, metabaseApiKey)
+          val (params, diffLevelDict, _, _) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationStatusTable, postgresUtil, createDashboardQuery, metabaseApiKey)
           val stateNameId: Int = getTheColumnId(databaseId, observationStatusTable, "parent_one_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
           val districtNameId: Int = getTheColumnId(databaseId, observationStatusTable, "parent_two_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
           metabaseUtil.updateColumnCategory(stateNameId, "State")
