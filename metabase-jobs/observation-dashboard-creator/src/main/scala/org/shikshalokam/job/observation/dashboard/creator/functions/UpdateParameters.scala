@@ -106,7 +106,7 @@ object UpdateParameters {
     // Step 3: Remove specified keys from each dict
     sortedParams.foreach { obj =>
       keysToRemove.foreach(obj.remove)
-      if (isEntityTypeMatched) {
+      if (!isEntityTypeMatched) {
         val name = obj.path("name").asText()
         if (name.contains("$entity_type")) {
           obj.put("name", name.replace("$entity_type", entityType))

@@ -497,8 +497,8 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
         }
 
         val mapper = new ObjectMapper()
-        val arrayNode = mapper.readTree(DashboardParameter)
-
+        val json = if (Option(DashboardParameter).exists(_.trim.nonEmpty)) DashboardParameter else "[]"
+        val arrayNode = mapper.readTree(json)
         val matchedNodeOpt = arrayNode.elements().asScala.find(
           node => Option(node.get("entity_type")).exists(_.asText() == entityType)
         )
@@ -530,11 +530,9 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
             // Case 2: entityType not found
             case None =>
               val keepKeys = Seq("domain_param", "criteria_param", "entity_param")
-              val filtered = ListMap(keepKeys.flatMap(k =>
-                completeMapOfParamAndColumnName.get(k).map(v => k -> v)
-              ): _*)
+              val filtered = ListMap(keepKeys.flatMap(k => completeMapOfParamAndColumnName.get(k).map(v => k -> v)): _*)
 
-              (filtered, "entity_param", "entity_name", true)
+              (filtered, "entity_param", "entity_name", false)
           }
 
         val params: Map[String, Int] =
