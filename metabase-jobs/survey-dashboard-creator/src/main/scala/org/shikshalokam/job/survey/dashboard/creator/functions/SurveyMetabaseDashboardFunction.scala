@@ -90,16 +90,10 @@ class SurveyMetabaseDashboardFunction(config: SurveyMetabaseDashboardConfig)(imp
 
       val programName = postgresUtil.fetchData(s"""SELECT entity_name from $metaDataTable where entity_id = '$targetedProgramId'""").collectFirst { case map: Map[_, _] => map.get("entity_name").map(_.toString).getOrElse("") }.getOrElse("")
 
-      val orgNameQuery = s"""SELECT organisation_name from "$targetedSolutionId" where solution_id = '$targetedSolutionId' group by organisation_name limit 1"""
-      val orgName = postgresUtil.fetchData(orgNameQuery)
-        .collectFirst { case map: Map[_, _] =>
-          map.get("organisation_name") match {
-            case Some(s: String) if s.trim.nonEmpty && s != "null" => s
-            case _ => null
-          }
-        }
-        .filter(_ != null)
-
+      val orgName = postgresUtil.fetchData(s"""SELECT organisation_name from "${targetedSolutionId}_survey_status" limit 1""") match {
+        case List(map: Map[_, _]) => map.get("organisation_name").map(_.toString).getOrElse("")
+        case _ => ""
+      }
       val programCollectionName = s"$programName [org : $orgName]"
       val solutionCollectionName = s"$solutionName [Survey]"
       val tabList: List[String] = List("Status Report", "Question Report", "Status CSV", "Question CSV")

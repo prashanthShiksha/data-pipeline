@@ -277,7 +277,7 @@ class ProjectMetabaseDashboardFunction(config: ProjectMetabaseDashboardConfig)(i
         if (projectTabId != -1 && userTabId != -1 && csvTabId != -1) {
           val stateNameId: Int = getTheColumnId(databaseId, projects, "state_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
           val districtNameId: Int = getTheColumnId(databaseId, projects, "district_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
-          val programNameId: Int = getTheColumnId(databaseId, solutions, "program_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
+          val programNameId: Int = getTheColumnId(databaseId, projects, "program_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
           val blockNameId: Int = getTheColumnId(databaseId, projects, "block_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
           val clusterNameId: Int = getTheColumnId(databaseId, projects, "cluster_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
           val orgNameId: Int = getTheColumnId(databaseId, projects, "org_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
