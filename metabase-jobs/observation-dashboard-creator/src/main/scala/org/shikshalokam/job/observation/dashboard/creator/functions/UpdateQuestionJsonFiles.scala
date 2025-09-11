@@ -16,7 +16,7 @@ object UpdateQuestionJsonFiles {
     val questionCardId = ListBuffer[Int]()
     val objectMapper = new ObjectMapper()
     var csvConfigQuery = ""
-    if (isEntityTypeMatched == "true") {
+    if (isEntityTypeMatched) {
       csvConfigQuery = s"SELECT * FROM $report_config WHERE dashboard_name = 'Observation-Question' AND question_type = 'table';"
     } else {
       csvConfigQuery = s"SELECT question_type, config FROM $report_config WHERE dashboard_name = 'Observation-Customised-Filter-Csv-Table' AND report_name = 'Question-Report' AND question_type = 'table';"
