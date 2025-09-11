@@ -1,7 +1,7 @@
 [
   {
     "name": "Select School",
-    "columnName": "parent_five_name",
+    "columnName": "user_five_profile_name",
     "param": "school_param",
     "order": 5,
     "entity_type": "school",
@@ -21,7 +21,7 @@
   },
   {
     "name": "Select Cluster",
-    "columnName": "parent_four_name",
+    "columnName": "user_four_profile_name",
     "param": "cluster_param",
     "order": 4,
     "entity_type": "cluster",
@@ -40,7 +40,7 @@
   },
   {
     "name": "Select Block",
-    "columnName": "parent_three_name",
+    "columnName": "user_three_profile_name",
     "param": "block_param",
     "order": 3,
     "entity_type": "block",
@@ -60,7 +60,7 @@
   },
   {
     "name": "Select District",
-    "columnName": "parent_two_name",
+    "columnName": "user_two_profile_name",
     "param": "district_param",
     "order": 2,
     "entity_type": "district",
@@ -80,7 +80,7 @@
   },
   {
     "name": "Select State",
-    "columnName": "parent_one_name",
+    "columnName": "user_one_profile_name",
     "param": "state_param",
     "order": 1,
     "entity_type": "state",

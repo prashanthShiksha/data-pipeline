@@ -11,12 +11,16 @@ import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
 object UpdateWithoutRubricQuestionJsonFiles {
-  def ProcessAndUpdateJsonFiles(collectionId: Int, databaseId: Int, dashboardId: Int, tabId: Int, question: String, metabaseUtil: MetabaseUtil, postgresUtil: PostgresUtil, report_config: String, params: Map[String, Int], newLevelDict: ListMap[String, String], evidenceBaseUrl: String): ListBuffer[Int] = {
+  def ProcessAndUpdateJsonFiles(collectionId: Int, databaseId: Int, dashboardId: Int, tabId: Int, question: String, metabaseUtil: MetabaseUtil, postgresUtil: PostgresUtil, report_config: String, params: Map[String, Int], newLevelDict: ListMap[String, String], evidenceBaseUrl: String, isEntityTypeMatched: Boolean): ListBuffer[Int] = {
     println(s"---------------started processing ProcessAndUpdateJsonFiles function----------------")
     val questionCardId = ListBuffer[Int]()
     val objectMapper = new ObjectMapper()
-
-    val csvConfigQuery = s"SELECT * FROM $report_config WHERE dashboard_name = 'Observation-Question-Without-Rubric' AND question_type = 'table';"
+    var csvConfigQuery = ""
+    if (isEntityTypeMatched == "true") {
+      csvConfigQuery = s"SELECT * FROM $report_config WHERE dashboard_name = 'Observation-Question-Without-Rubric' AND question_type = 'table';"
+    } else {
+      csvConfigQuery = s"SELECT question_type, config FROM $report_config WHERE dashboard_name = 'Observation-Customised-Filter-Csv-Table' AND report_name = 'Question-Without-Rubric-Report' AND question_type = 'table';"
+    }
 
     def processCsvJsonFiles(collectionId: Int, databaseId: Int, dashboardId: Int, tabId: Int, questionTable: String, newRow: Int, newCol: Int, params: Map[String, Int], newLevelDict: ListMap[String, String], evidenceBaseUrl: String): Unit = {
       val dashcardsArray = objectMapper.createArrayNode()

@@ -1,7 +1,7 @@
 [
   {
     "name": "Select School",
-    "columnName": "parent_five_name",
+    "columnName": "user_five_profile_name",
     "param": "school_param",
     "order": 5,
     "entity_type": "school",
@@ -11,17 +11,19 @@
     "sectionId": "string",
     "isMultiSelect": false,
     "filteringParameters": [
-      "5088d3e5",
-      "c32c8fc5",
-      "74a10335",
-      "9e5a09bh",
       "cc7a4cd7",
+      "9e5a09bh",
+      "74a10335",
+      "c32c8fc5",
+      "fbca1e77",
+      "ffbf9c99",
+      "5088d3e5",
       "ffbf9c98"
     ]
   },
   {
     "name": "Select Cluster",
-    "columnName": "parent_four_name",
+    "columnName": "user_four_profile_name",
     "param": "cluster_param",
     "order": 4,
     "entity_type": "cluster",
@@ -31,16 +33,19 @@
     "sectionId": "string",
     "isMultiSelect": false,
     "filteringParameters": [
-      "5088d3e5",
-      "c32c8fc5",
-      "74a10335",
+      "6e5c08dc",
       "9e5a09bh",
-      "6e5c08dc"
+      "74a10335",
+      "c32c8fc5",
+      "fbca1e77",
+      "ffbf9c99",
+      "5088d3e5",
+      "ffbf9c98"
     ]
   },
   {
     "name": "Select Block",
-    "columnName": "parent_three_name",
+    "columnName": "user_three_profile_name",
     "param": "block_param",
     "order": 3,
     "entity_type": "block",
@@ -50,17 +55,19 @@
     "sectionId": "string",
     "isMultiSelect": false,
     "filteringParameters": [
-      "5088d3e5",
-      "c32c8fc5",
-      "74a10335",
-      "cc7a4cd7",
       "6e5c08dc",
+      "cc7a4cd7",
+      "74a10335",
+      "c32c8fc5",
+      "fbca1e77",
+      "ffbf9c99",
+      "5088d3e5",
       "ffbf9c98"
     ]
   },
   {
     "name": "Select District",
-    "columnName": "parent_two_name",
+    "columnName": "user_two_profile_name",
     "param": "district_param",
     "order": 2,
     "entity_type": "district",
@@ -70,17 +77,18 @@
     "sectionId": "string",
     "id": "74a10335",
     "filteringParameters": [
-      "5088d3e5",
-      "c32c8fc5",
-      "9e5a09bh",
-      "cc7a4cd7",
       "6e5c08dc",
-      "ffbf9c98"
+      "cc7a4cd7",
+      "9e5a09bh",
+      "c32c8fc5",
+      "fbca1e77",
+      "ffbf9c99",
+      "5088d3e5"
     ]
   },
   {
     "name": "Select State",
-    "columnName": "parent_one_name",
+    "columnName": "user_one_profile_name",
     "param": "state_param",
     "order": 1,
     "entity_type": "state",
@@ -90,13 +98,57 @@
     "sectionId": "string",
     "isMultiSelect": false,
     "filteringParameters": [
-      "5088d3e5",
-      "74a10335",
-      "9e5a09bh",
-      "cc7a4cd7",
       "6e5c08dc",
+      "cc7a4cd7",
+      "9e5a09bh",
+      "74a10335",
+      "fbca1e77",
+      "ffbf9c99",
+      "5088d3e5",
       "ffbf9c98"
     ]
+  },
+  {
+    "name": "Select Domain",
+    "columnName": "domain",
+    "param": "domain_param",
+    "order": 7,
+    "slug": "select_domain",
+    "id": "fbca1e77",
+    "type": "string/=",
+    "sectionId": "string",
+    "filteringParameters": [
+      "6e5c08dc",
+      "cc7a4cd7",
+      "9e5a09bh",
+      "74a10335",
+      "c32c8fc5",
+      "ffbf9c99",
+      "5088d3e5",
+      "ffbf9c98"
+    ],
+    "isMultiSelect": false
+  },
+  {
+    "name": "Select Criteria",
+    "columnName": "criteria",
+    "param": "criteria_param",
+    "order": 8,
+    "slug": "select_criteria",
+    "id": "ffbf9c99",
+    "type": "string/=",
+    "sectionId": "string",
+    "filteringParameters": [
+      "6e5c08dc",
+      "cc7a4cd7",
+      "9e5a09bh",
+      "74a10335",
+      "c32c8fc5",
+      "fbca1e77",
+      "5088d3e5",
+      "ffbf9c98"
+    ],
+    "isMultiSelect": false
   },
   {
     "name": "Select Organisation",
@@ -109,11 +161,13 @@
     "sectionId": "string",
     "isMultiSelect": false,
     "filteringParameters": [
-      "c32c8fc5",
-      "74a10335",
-      "9e5a09bh",
-      "cc7a4cd7",
       "6e5c08dc",
+      "cc7a4cd7",
+      "9e5a09bh",
+      "74a10335",
+      "c32c8fc5",
+      "fbca1e77",
+      "ffbf9c99",
       "ffbf9c98"
     ]
   },

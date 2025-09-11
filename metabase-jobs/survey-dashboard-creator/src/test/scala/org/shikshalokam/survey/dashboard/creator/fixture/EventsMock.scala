@@ -8,4 +8,5 @@ object EventsMock {
 
   val METABASE_DASHBOARD_EVENT_1_WITHOUT_PROGRAM: String = """{"reportType":"Survey","publishedAt":"2025-05-05 20:24:07","dashboardData":{"targetedSolution":"67937ab6922600d2c0c8cb85"},"_id":"c6a07fed-f4b9-4462-b5e1-6a0174e9fc03"}"""
 
+  val MULTISOLUTION_EVENT: String = """{"reportType":"Survey","publishedAt":"2025-09-11 12:47:30","dashboardData":{"targetedSolution":"68b152412df127c1bf2b2f27"},"_id":"eb5942ac-cbcf-410a-a258-8250a5d51c90"}"""
 }
