@@ -8,4 +8,7 @@ object EventsMock {
 
   val METABASE_DASHBOARD_EVENT_3: String = """{"reportType":"Observation","publishedAt":"2025-07-01 11:16:17","dashboardData":{"targetedProgram":"684fe6ab826b8c99acc38653","targetedSolution":"684fe872826b8c99acc38771","isRubric":"true","entityType":"cluster"},"_id":"1e76ee0c-1540-4e27-b4de-3ab9390306bd"}"""
 
+  val CUSTOMIZED_FILTER_EVENT: String = """{"reportType":"Observation","publishedAt":"2025-09-09 16:28:39","dashboardData":{"targetedProgram":"6889e0f5ab139a00141e1727","targetedSolution":"688a078c2df127c1bf2afe52","isRubric":"false","entityType":"Handbook1_Activity"},"_id":"846e4009-94c1-4e2c-b38c-ce9bf23a2fb5"}"""
+
+  val MULTISOLUTION_EVENT: String = """{"reportType":"Observation","publishedAt":"2025-09-11 12:44:17","dashboardData":{"targetedSolution":"68b151692df127c1bf2b2de4","isRubric":"true","entityType":"cluster"},"_id":"84b55572-3134-4906-b6d6-d5fade1f8d8d"}"""
 }
