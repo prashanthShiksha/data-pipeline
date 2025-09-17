@@ -266,8 +266,8 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
               } else {
                 entityColumnName
               }
-              val domainReportConfigQuery: String = s"SELECT question_type, config FROM $reportConfig WHERE (dashboard_name = 'Observation-Question-Domain' AND question_type != 'table') OR (dashboard_name = 'Observation-Customised-Filter-Csv-Table' AND report_name = 'Domain-Report' AND question_type = 'table');"
-              UpdateQuestionDomainJsonFiles.ProcessAndUpdateJsonFiles(domainReportConfigQuery, parentCollectionId, databaseId, dashboardId, tabId, observationDomainTable, observationQuestionTable, metabaseUtil, postgresUtil, params, diffLevelDict, entityColumnName, entityColumnId, entityType)
+//              val domainReportConfigQuery: String = s"SELECT question_type, config FROM $reportConfig WHERE (dashboard_name = 'Observation-Question-Domain' AND question_type != 'table') OR (dashboard_name = 'Observation-Customised-Filter-Csv-Table' AND report_name = 'Domain-Report' AND question_type = 'table');"
+//              UpdateQuestionDomainJsonFiles.ProcessAndUpdateJsonFiles(domainReportConfigQuery, parentCollectionId, databaseId, dashboardId, tabId, observationDomainTable, observationQuestionTable, metabaseUtil, postgresUtil, params, diffLevelDict, entityColumnName, entityColumnId, entityType)
               questionCardIdList = UpdateQuestionJsonFiles.ProcessAndUpdateJsonFiles(parentCollectionId, databaseId, dashboardId, tabId, observationQuestionTable, metabaseUtil, postgresUtil, reportConfig, params, diffLevelDict, evidenceBaseUrl, isEntityTypeMatched)
             } else {
               val entityColumnId = if (entityColumnName.endsWith("_name")) {
@@ -275,8 +275,8 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
               } else {
                 entityColumnName
               }
-              val domainReportConfigQuery: String = s"SELECT question_type, config FROM $reportConfig WHERE dashboard_name = 'Observation-Question-Domain';"
-              UpdateQuestionDomainJsonFiles.ProcessAndUpdateJsonFiles(domainReportConfigQuery, parentCollectionId, databaseId, dashboardId, tabId, observationDomainTable, observationQuestionTable, metabaseUtil, postgresUtil, params, diffLevelDict, entityColumnName, entityColumnId, entityType)
+//              val domainReportConfigQuery: String = s"SELECT question_type, config FROM $reportConfig WHERE dashboard_name = 'Observation-Question-Domain';"
+//              UpdateQuestionDomainJsonFiles.ProcessAndUpdateJsonFiles(domainReportConfigQuery, parentCollectionId, databaseId, dashboardId, tabId, observationDomainTable, observationQuestionTable, metabaseUtil, postgresUtil, params, diffLevelDict, entityColumnName, entityColumnId, entityType)
               questionCardIdList = UpdateQuestionJsonFiles.ProcessAndUpdateJsonFiles(parentCollectionId, databaseId, dashboardId, tabId, observationQuestionTable, metabaseUtil, postgresUtil, reportConfig, params, diffLevelDict, evidenceBaseUrl, isEntityTypeMatched)
             }
             questionCardIdList
@@ -338,7 +338,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
           if (!isEntityTypeMatched) {
             val parametersQuery: String = s"SELECT config FROM $reportConfig WHERE dashboard_name = 'Observation' AND question_type = 'Observation-Customised-Filter-Status-Parameter'"
             val (params, diffLevelDict, _, _) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationStatusTable, postgresUtil, createDashboardQuery, metabaseApiKey)
-            val reportConfigQuery: String = s"SELECT * FROM local_report_Config WHERE (dashboard_name = 'Observation-Status' AND report_name = 'Status-Report' AND question_type != 'table') OR (dashboard_name = 'Observation-Customised-Filter-Csv-Table' AND report_name = 'Status-Report' AND question_type = 'table'); "
+            val reportConfigQuery: String = s"SELECT * FROM $reportConfig WHERE (dashboard_name = 'Observation-Status' AND report_name = 'Status-Report' AND question_type != 'table') OR (dashboard_name = 'Observation-Customised-Filter-Csv-Table' AND report_name = 'Status-Report' AND question_type = 'table'); "
             val replacements: Map[String, String] = Map(
               "${statusTable}" -> s""""${observationStatusTable}"""",
             )
@@ -372,16 +372,11 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
           if (!isEntityTypeMatched) {
             val parametersQuery: String = s"SELECT config FROM $reportConfig WHERE dashboard_name = 'Observation' AND question_type = 'Observation-Customised-Filter-Domain-Parameter'"
             val (params, diffLevelDict, entityColumnName, isEntityTypeMatched) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationDomainTable, postgresUtil, createDashboardQuery, metabaseApiKey)
-            val entityColumnId = if (entityColumnName.endsWith("_name")) {
-              entityColumnName.replaceAll("_name$", "_id")
-            } else {
-              entityColumnName
-            }
-            val reportConfigQuery: String = s"SELECT question_type, config FROM local_report_Config WHERE (dashboard_name = 'Observation-Domain' AND report_name = 'Domain-Report' AND question_type != 'table') OR (dashboard_name = 'Observation-Customised-Filter-Csv-Table' AND report_name = 'Domain-Report' AND question_type = 'table');"
+            val reportConfigQuery: String = s"SELECT question_type, config FROM $reportConfig WHERE (dashboard_name = 'Observation-Domain' AND report_name = 'Domain-Report' AND question_type != 'table') OR (dashboard_name = 'Observation-Customised-Filter-Csv-Table' AND report_name = 'Domain-Report' AND question_type = 'table');"
             val replacements: Map[String, String] = Map(
               "${domainTable}" -> s""""${observationDomainTable}"""",
               "${entityColumnName}" -> s"""$entityColumnName""",
-              "${entityColumnId}" -> s"""$entityColumnId""",
+              "${entityColumnId}" -> s"""$entityColumnName""",
               "${entityType}" -> s"""$entityType"""
             )
             questionCardIdList = UpdateStatusJsonFiles.ProcessAndUpdateJsonFiles(reportConfigQuery, parentCollectionId, databaseId, dashboardId, tabId, metabaseUtil, postgresUtil, params, replacements, diffLevelDict, entityType)
@@ -571,7 +566,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
             // Case 2: entityType not found
             case None =>
               println(s"No entityType match, keeping all params")
-              (completeMapOfParamAndColumnName, "", "", false)
+              (completeMapOfParamAndColumnName, "", "entity_name", false)
           }
 
         val params: Map[String, Int] =
