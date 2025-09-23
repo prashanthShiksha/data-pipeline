@@ -58,6 +58,8 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
     val targetedSolutionId = event.targetedSolution
     val isRubric = event.isRubric
     val entityType = event.entityType
+    val filterSync = event.filterSync
+    val filterTable = event.filterTable
     val metaDataTable = config.dashboard_metadata
     val reportConfig: String = config.report_config
     val metabaseApiKey: String = config.metabaseKey
@@ -170,6 +172,24 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
         println(s"=====> Program name or Solution name is null, skipping the processing")
       }
 
+      if (filterSync.nonEmpty){
+        val searchTableReponse = metabaseUtil.searchTable(filterTable, databaseId)
+        val filterTableId: Int = extractTableId(searchTableReponse)
+        if (filterTableId != -1) {
+          metabaseUtil.discardValues(filterTableId)
+          metabaseUtil.rescanValues(filterTableId)
+        }
+      }
+
+      def extractTableId(response: String): Int = {
+        val json = ujson.read(response)
+        val dataArr = json("data").arr
+        if (dataArr.nonEmpty && dataArr(0).obj.contains("table_id")) {
+          dataArr(0)("table_id").num.toInt
+        } else {
+          -1
+        }
+      }
 
       def createDashboard(programCollectionId: Int, targetedSolutionId: String, solutionExternalId: String, solutionCollectionName: String, solutionDescription: String, dashboardDescription: String, tabList: List[String], metaDataTable: String, reportConfig: String, metabaseDatabase: String, evidenceBaseUrl: String, targetedProgramId: String, observationStatusTable: String, observationDomainTable: String, observationQuestionTable: String, entityType: String, isRubric: String, reportFor: String): Unit = {
         val solutionCollectionId = createSolutionCollectionInsideProgram(programCollectionId, targetedSolutionId, solutionExternalId, solutionCollectionName, solutionDescription, reportFor)
@@ -261,22 +281,8 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
             if (!isEntityTypeMatched) {
               val parametersQuery: String = s"SELECT config FROM $reportConfig WHERE dashboard_name = 'Observation' AND question_type = 'Observation-Customised-Filter-Question-Parameter'"
               val (params, diffLevelDict, entityColumnName, isEntityTypeMatched) = extractParameterDicts(parametersQuery, entityType, databaseId, metabaseUtil, observationQuestionTable, postgresUtil, createDashboardQuery, metabaseApiKey)
-              val entityColumnId = if (entityColumnName.endsWith("_name")) {
-                entityColumnName.replaceAll("_name$", "_id")
-              } else {
-                entityColumnName
-              }
-//              val domainReportConfigQuery: String = s"SELECT question_type, config FROM $reportConfig WHERE (dashboard_name = 'Observation-Question-Domain' AND question_type != 'table') OR (dashboard_name = 'Observation-Customised-Filter-Csv-Table' AND report_name = 'Domain-Report' AND question_type = 'table');"
-//              UpdateQuestionDomainJsonFiles.ProcessAndUpdateJsonFiles(domainReportConfigQuery, parentCollectionId, databaseId, dashboardId, tabId, observationDomainTable, observationQuestionTable, metabaseUtil, postgresUtil, params, diffLevelDict, entityColumnName, entityColumnId, entityType)
               questionCardIdList = UpdateQuestionJsonFiles.ProcessAndUpdateJsonFiles(parentCollectionId, databaseId, dashboardId, tabId, observationQuestionTable, metabaseUtil, postgresUtil, reportConfig, params, diffLevelDict, evidenceBaseUrl, isEntityTypeMatched)
             } else {
-              val entityColumnId = if (entityColumnName.endsWith("_name")) {
-                entityColumnName.replaceAll("_name$", "_id")
-              } else {
-                entityColumnName
-              }
-//              val domainReportConfigQuery: String = s"SELECT question_type, config FROM $reportConfig WHERE dashboard_name = 'Observation-Question-Domain';"
-//              UpdateQuestionDomainJsonFiles.ProcessAndUpdateJsonFiles(domainReportConfigQuery, parentCollectionId, databaseId, dashboardId, tabId, observationDomainTable, observationQuestionTable, metabaseUtil, postgresUtil, params, diffLevelDict, entityColumnName, entityColumnId, entityType)
               questionCardIdList = UpdateQuestionJsonFiles.ProcessAndUpdateJsonFiles(parentCollectionId, databaseId, dashboardId, tabId, observationQuestionTable, metabaseUtil, postgresUtil, reportConfig, params, diffLevelDict, evidenceBaseUrl, isEntityTypeMatched)
             }
             questionCardIdList

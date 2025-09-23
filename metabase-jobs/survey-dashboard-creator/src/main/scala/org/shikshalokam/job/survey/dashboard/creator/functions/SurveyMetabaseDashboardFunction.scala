@@ -58,6 +58,8 @@ class SurveyMetabaseDashboardFunction(config: SurveyMetabaseDashboardConfig)(imp
     val reportConfig: String = config.report_config
     val metabaseApiKey: String = config.metabaseApiKey
     val metabaseDatabase: String = config.metabaseDatabase
+    val filterSync: String = event.filterSync
+    val filterTable: String = event.filterTable
     val targetedSolutionId = event.targetedSolution
     if (targetedSolutionId.nonEmpty) {
       val databaseId: Int = Utils.getDatabaseId(metabaseDatabase, metabaseUtil)
@@ -177,6 +179,26 @@ class SurveyMetabaseDashboardFunction(config: SurveyMetabaseDashboardConfig)(imp
             }
         }
         println(s"***************** Processing Completed for Survey Metabase Dashboard Event with Id = ${event._id}*****************\n\n")
+      }
+
+      if (filterSync.nonEmpty){
+        val searchTableResponse = metabaseUtil.searchTable(filterTable, databaseId)
+        val filterTableId: Int = extractTableId(searchTableResponse)
+        if (filterTableId != -1) {
+          metabaseUtil.discardValues(filterTableId)
+          metabaseUtil.rescanValues(filterTableId)
+        }
+        println("Successfully updated the filters values")
+      }
+
+      def extractTableId(response: String): Int = {
+        val json = ujson.read(response)
+        val dataArr = json("data").arr
+        if (dataArr.nonEmpty && dataArr(0).obj.contains("table_id")) {
+          dataArr(0)("table_id").num.toInt
+        } else {
+          -1
+        }
       }
 
       def createAdminDashboard(solutionCollectionId: Int, dashboardId: Int, tabIdMap: Map[String, Int], solutionCollectionName: String, category: String): Unit = {

@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter
 import java.time.{Instant, ZoneId}
 import java.util
 import scala.collection.immutable.{Map, _}
+import scala.collection.mutable.ListBuffer
 
 class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: TypeInformation[Event], @transient var postgresUtil: PostgresUtil = null)
   extends BaseProcessFunction[Event, Event](config) {
@@ -99,29 +100,43 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
     println(s"userProfileFiveName : $userProfileFiveName")
     println(s"userProfileFiveExternalId : $userProfileFiveExternalId")
 
-    def checkAndCreateTable(tableName: String, createTableQuery: String): Unit = {
-      val checkTableExistsQuery =
-        s"""SELECT EXISTS (
-           |  SELECT FROM information_schema.tables
-           |  WHERE table_name = '$tableName'
-           |);
-           |""".stripMargin
+    val userDashboardFilters: List[Map[String, String]] = List(
+      Map(
+        "user_profile_one_name" -> userProfileOneName,
+        "user_profile_two_name" -> userProfileTwoName,
+        "user_profile_three_name" -> userProfileThreeName,
+        "user_profile_four_name" -> userProfileFourName,
+        "user_profile_five_name" -> userProfileFiveName
+      )
+    )
 
-      val tableExists = postgresUtil.executeQuery(checkTableExistsQuery) { resultSet =>
-        if (resultSet.next()) resultSet.getBoolean(1) else false
-      }
-
-      if (!tableExists) {
-        postgresUtil.createTable(createTableQuery, tableName)
-      }
-    }
+    val userActivityDashboardFilters: List[Map[String, String]] = List(
+      Map(
+        "tenant_code" -> tenantCode
+      )
+    )
 
     val createTenantTable = config.createTenantUserMetadataTable.replace("@tenantTable", tenantUserMetadataTable)
     checkAndCreateTable(tenantUserMetadataTable, createTenantTable)
+    val createUsersTable = config.createTenantUserTable.replace("@usersTable", tenantUserTable)
+    checkAndCreateTable(tenantUserTable, createUsersTable)
+    checkAndCreateTable(userMetrics, config.createUserMetricsTable)
 
     if (tenantCode.nonEmpty) {
       if (eventType == "update" || eventType == "bulk-update" || eventType == "create" || eventType == "bulk-create") {
+        /** checking existance of filter data for tenant user table */
+        val userDashboardFiltersList = ListBuffer[String]()
+        userDashboardFilters.foreach { filterMap =>
+          filterMap.foreach { case (key, value) =>
+            userDashboardFiltersList += checkIfValueExists(tenantUserTable.replace("\"", ""), key, value)
+          }
+        }
         processUsers(tenantUserTable, userId)
+        val finalUserDashboardFilterList: List[String] = userDashboardFiltersList.toList
+        checkExistenceOfDataAndPushMessageToKafka(finalUserDashboardFilterList, context, tenantUserTable)
+
+        val resultList = ListBuffer[String]()
+        resultList += checkIfValueExists(tenantUserMetadataTable.replace("\"", ""), "attribute_value", professionalRoleName)
         processUserMetadata(tenantUserMetadataTable, userId, "Professional Role", professionalRoleName, professionalRoleId)
         event.organizations.foreach { org =>
           println(s"Organization ID: ${org.get("id")}")
@@ -133,6 +148,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
            */
           if (organizationsName.nonEmpty && organizationsId.nonEmpty) {
             println(s"Upserting for attribute_code: Organizations, attribute_value: $organizationsName, attribute_label: $organizationsId")
+            resultList += checkIfValueExists(tenantUserMetadataTable.replace("\"", ""), "attribute_value", organizationsName)
             processUserMetadata(tenantUserMetadataTable, userId, "Organizations", organizationsName, organizationsId)
           } else {
             println("Org name or Org Id is empty")
@@ -146,11 +162,13 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
             val rolePairs = extractUserRolesPerRow(roles)
             val subrolePairs = extractProfessionalSubrolesPerRow(professionalSubroles)
             rolePairs.foreach { case (userRoleName, userRoleId) =>
+              resultList += checkIfValueExists(tenantUserMetadataTable.replace("\"", ""), "attribute_value", userRoleName)
               println(s"Upserting for attribute_code: Platform Role, attribute_value: $userRoleName, attribute_label: $userRoleId")
               processUserMetadata(tenantUserMetadataTable, userId, "Platform Role", userRoleName, userRoleId)
 
               if (subrolePairs.nonEmpty) {
                 subrolePairs.foreach { case (professionalSubrolesName, professionalSubrolesId) =>
+                  resultList += checkIfValueExists(tenantUserMetadataTable.replace("\"", ""), "attribute_value", professionalSubrolesName)
                   println(s"Upserting for attribute_code: Professional Subroles, attribute_value: $professionalSubrolesName, attribute_label: $professionalSubrolesId")
                   processUserMetadata(tenantUserMetadataTable, userId, "Professional Subroles", professionalSubrolesName, professionalSubrolesId)
                 }
@@ -162,10 +180,21 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
             println("Roles object is empty")
           }
         }
+
+        val finalResultList: List[String] = resultList.toList
+        checkExistenceOfDataAndPushMessageToKafka(finalResultList, context, tenantUserMetadataTable)
       } else if (eventType == "delete") {
         deleteData(tenantUserTable, userId)
       }
+      val userMetricDashboardFiltersList = ListBuffer[String]()
+      userActivityDashboardFilters.foreach { filterMap =>
+        filterMap.foreach { case (key, value) =>
+          userMetricDashboardFiltersList += checkIfValueExists(userMetrics.replace("\"", ""), key, value)
+        }
+      }
       userMetric(tenantUserTable)
+      val finalUserMetricDashboardFiltersList: List[String] = userMetricDashboardFiltersList.toList
+      checkExistenceOfDataAndPushMessageToKafka(finalUserMetricDashboardFiltersList, context, userMetrics)
     } else {
       println("Tenant Code is Empty")
     }
@@ -207,9 +236,6 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
 
     def processUsers(tenantUserTable: String, userId: Int): Unit = {
       println(">>> Started processing user data for a tenant")
-      val createUsersTable = config.createTenantUserTable.replace("@usersTable", tenantUserTable)
-      checkAndCreateTable(tenantUserTable, createUsersTable)
-
       val upsertUserQuery =
         s"""
            |INSERT INTO $tenantUserTable (
@@ -246,8 +272,6 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
     }
 
     def userMetric(tenantUserTable: String): Unit = {
-      checkAndCreateTable(userMetrics, config.createUserMetricsTable)
-
       val upsertQuery =
         s"""
            |INSERT INTO $userMetrics (tenant_code, total_users, active_users, deleted_users, last_updated)
@@ -287,7 +311,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
       }
 
     if (!dashboardData.isEmpty) {
-      pushUserDashboardEvents(dashboardData, context, event)
+      pushUserDashboardEvents(dashboardData, context)
     }
 
     println(s"***************** Completed Processing the User Event with User Id = ${event.userId} *****************")
@@ -316,7 +340,68 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
     }
   }
 
-  private def pushUserDashboardEvents(dashboardData: util.HashMap[String, String], context: ProcessFunction[Event, Event]#Context, event: Event): util.HashMap[String, AnyRef] = {
+  def checkAndCreateTable(tableName: String, createTableQuery: String): Unit = {
+    val checkTableExistsQuery =
+      s"""SELECT EXISTS (
+         |  SELECT FROM information_schema.tables
+         |  WHERE table_name = '$tableName'
+         |);
+         |""".stripMargin
+
+    val tableExists = postgresUtil.executeQuery(checkTableExistsQuery) { resultSet =>
+      if (resultSet.next()) resultSet.getBoolean(1) else false
+    }
+
+    if (!tableExists) {
+      postgresUtil.createTable(createTableQuery, tableName)
+    }
+  }
+
+  def checkIfValueExists(tableName: String, columnName: String, value: String)(implicit postgresUtil: PostgresUtil): String = {
+    val rowCountQuery = s"SELECT COUNT(*) AS row_count FROM $tableName"
+    val rowCount = postgresUtil.executeQuery(rowCountQuery) { rs =>
+      if (rs.next()) rs.getLong("row_count") else 0
+    }
+    if (rowCount == 0) {
+      println(s"Table $tableName has no rows → first time inserting data.")
+      ""
+    } else {
+      val query =
+        s"""
+           |SELECT
+           |    CASE
+           |        WHEN EXISTS (
+           |            SELECT 1
+           |            FROM $tableName
+           |            WHERE $columnName = '$value'
+           |        )
+           |        THEN 'Yes'
+           |        ELSE 'No'
+           |    END AS exists_flag;
+           |""".stripMargin
+
+      postgresUtil.executeQuery(query) { resultSet =>
+        if (resultSet.next()) resultSet.getString("exists_flag") else ""
+      }
+    }
+  }
+
+  def checkExistenceOfDataAndPushMessageToKafka(resultList: List[String], context: ProcessFunction[Event, Event]#Context, tableName: String): Unit = {
+    if (resultList.exists(s => s == null || s.trim.isEmpty)) {
+      return ""
+    }
+    if (resultList.contains("No")) {
+      val eventData = new java.util.HashMap[String, String]()
+      eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
+      eventData.put("filterSync", "Yes")
+      pushUserDashboardEvents(eventData, context)
+      println(s"eventData: $eventData")
+    } else {
+      println(s"Data already Exists in $tableName → not sending Kafka message for $tableName")
+    }
+  }
+
+  private def pushUserDashboardEvents(dashboardData: util.HashMap[String, String], context: ProcessFunction[Event, Event]#Context): util.HashMap[String, AnyRef] = {
     val objects = new util.HashMap[String, AnyRef]() {
       put("_id", java.util.UUID.randomUUID().toString)
       put("reportType", "User Dashboard")

@@ -6,4 +6,7 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def tenantCode: String = readOrDefault[String]("dashboardData.tenantCode", null)
 
+  def filterSync: String = readOrDefault("dashboardData.filterSync", "")
+
+  def filterTable: String = readOrDefault("dashboardData.filterTable", "")
 }

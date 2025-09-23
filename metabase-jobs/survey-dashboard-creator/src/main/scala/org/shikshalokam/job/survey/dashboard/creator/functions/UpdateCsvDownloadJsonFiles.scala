@@ -171,7 +171,7 @@ object UpdateCsvDownloadJsonFiles {
       }
     }
 
-    processCsvJsonFiles(reportConfigQuery, collectionId, databaseId, dashboardId, tabId, stateNameId, districtNameId, blockNameId, schoolNameId, clusterNameId, orgNameId, replacements)
+    processCsvJsonFiles(reportConfigQuery, collectionId, databaseId, dashboardId, tabId, stateNameId, districtNameId, blockNameId, clusterNameId, schoolNameId, orgNameId, replacements)
     println(s"---------------processed ProcessAndUpdateJsonFiles function----------------")
     questionCardId
   }

@@ -65,6 +65,8 @@ class ProjectMetabaseDashboardFunction(config: ProjectMetabaseDashboardConfig)(i
     val metabaseDatabase: String = config.metabaseDatabase
     val domainName: String = config.metabaseDomainName
     val metabaseApiKey: String = config.metabaseKey
+    val filterSync: String = event.filterSync
+    val filterTable: String = event.filterTable
     val databaseId: Int = Utils.getDatabaseId(metabaseDatabase, metabaseUtil)
     val solutionName = postgresUtil.fetchData(s"""SELECT name FROM $solutions WHERE solution_id = '$targetedSolutionId'""").collectFirst { case map: Map[_, _] => map.getOrElse("name", "").toString }.getOrElse("")
     val targetedProgramId: String = Option(event.targetedProgram).map(_.trim).filter(_.nonEmpty).getOrElse(postgresUtil.fetchData(s"SELECT program_id FROM $solutions WHERE solution_id = '$targetedSolutionId'").collectFirst { case map: Map[_, _] => map.get("program_id").map(_.toString).getOrElse("") }.getOrElse(""))
@@ -264,6 +266,28 @@ class ProjectMetabaseDashboardFunction(config: ProjectMetabaseDashboardConfig)(i
         } else println("Either Solution or Program name is null")
 
         println(s">>>>>>>>>>> Completed Processing Metabase Project Dashboards >>>>>>>>>>>>")
+
+        if (filterSync.nonEmpty){
+          val searchTableReponse = metabaseUtil.searchTable(filterTable, databaseId)
+          val filterTableId: Int = extractTableId(searchTableReponse)
+          if (filterTableId != -1) {
+            metabaseUtil.discardValues(filterTableId)
+            metabaseUtil.rescanValues(filterTableId)
+          }
+          println("Successfully updated the filters values")
+        }
+    }
+
+
+
+    def extractTableId(response: String): Int = {
+      val json = ujson.read(response)
+      val dataArr = json("data").arr
+      if (dataArr.nonEmpty && dataArr(0).obj.contains("table_id")) {
+        dataArr(0)("table_id").num.toInt
+      } else {
+        -1
+      }
     }
 
     def createMicroImprovementsCollectionAndDashboard(metaDataTable: String, reportConfig: String, databaseId: Int): Unit = {

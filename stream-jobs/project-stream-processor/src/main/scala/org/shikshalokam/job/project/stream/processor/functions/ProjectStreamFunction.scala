@@ -145,6 +145,13 @@ class ProjectStreamFunction(config: ProjectStreamConfig)(implicit val mapTypeInf
       val programDescription = event.programDescription
       val privateProgram = event.privateProgram
 
+      val solutionDashboardFilters: List[Map[String, String]] = List(
+        Map(
+          "program_name" -> programName,
+          "table_name" -> config.solutions
+        )
+      )
+
       val upsertSolutionQuery =
         s"""INSERT INTO ${config.solutions} (solution_id, external_id, name, description, duration, categories, program_id, program_name, program_external_id, program_description, private_program)
            |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -168,7 +175,7 @@ class ProjectStreamFunction(config: ProjectStreamConfig)(implicit val mapTypeInf
         // Update parameters (matching columns in the ON CONFLICT clause)
         solutionExternalId, solutionName, solutionDescription, projectDuration, projectCategories, programId, programName, programExternalId, programDescription, privateProgram
       )
-
+      checkExistenceOfFilterData(solutionDashboardFilters, context, solutionId)
       postgresUtil.executePreparedUpdate(upsertSolutionQuery, solutionParams, config.solutions, solutionId)
 
       /**
@@ -211,6 +218,19 @@ class ProjectStreamFunction(config: ProjectStreamConfig)(implicit val mapTypeInf
         certificateStatus = "In-Progress"
       }
 
+      val projectsDashboardFilters: List[Map[String, String]] = List(
+        Map(
+          "state_name" -> stateName,
+          "district_name" -> districtName,
+          "block_name" -> blockName,
+          "cluster_name" -> clusterName,
+          "school_name" -> schoolName,
+          "program_name" -> programName,
+          "org_name" -> orgName,
+          "table_name" -> config.projects
+        )
+      )
+
       val upsertProjectQuery =
         s"""INSERT INTO ${config.projects} (
            |    project_id, solution_id, created_by, created_date, completed_date, last_sync, updated_date, status, remarks,
@@ -240,7 +260,7 @@ class ProjectStreamFunction(config: ProjectStreamConfig)(implicit val mapTypeInf
         districtId, districtName, blockId, blockName, clusterId, clusterName, schoolId, schoolName,
         certificateTemplateId, certificateTemplateUrl, certificateIssuedOn, certificateStatus, certificatePdfPath
       )
-
+      checkExistenceOfFilterData(projectsDashboardFilters, context, solutionId)
       postgresUtil.executePreparedUpdate(upsertProjectQuery, projectParams, config.projects, projectId)
 
       /**
@@ -383,6 +403,56 @@ class ProjectStreamFunction(config: ProjectStreamConfig)(implicit val mapTypeInf
                 dashboardData.put(dashboardKey, targetedId)
               }
             }
+        }
+      }
+    }
+
+    def checkExistenceOfFilterData(filterList: List[Map[String, String]], context: ProcessFunction[Event, Event]#Context, solutionId: String): Unit = {
+      println("Checking existence of filter data...")
+
+      filterList.foreach { filter =>
+        val tableName = filter.getOrElse("table_name", "")
+        val columnValuePairs = filter.filterKeys(_ != "table_name").filter { case (_, v) => v != null && v.nonEmpty }
+
+        if (tableName.nonEmpty && columnValuePairs.nonEmpty) {
+          // Step 1: Check if table exists
+          val tableExistsQuery =
+            s"SELECT to_regclass('$tableName') IS NOT NULL AS table_exists"
+
+          val tableExists = postgresUtil.executeQuery(tableExistsQuery) { rs =>
+            if (rs.next()) rs.getBoolean("table_exists") else false
+          }
+
+          if (tableExists) {
+            // Step 2: Check if data exists
+            val whereClause = columnValuePairs.map { case (col, _) => s"""$col = ?""" }.mkString(" AND ")
+            val params = columnValuePairs.values.toSeq
+            val queryWithParams = params.foldLeft(
+              s"SELECT EXISTS (SELECT 1 FROM $tableName WHERE $whereClause) AS data_exists"
+            ) {
+              case (q, v) => q.replaceFirst("\\?", s"'${v.replace("'", "''")}'")
+            }
+
+            val dataExists = postgresUtil.executeQuery(queryWithParams) { rs =>
+              if (rs.next()) rs.getBoolean("data_exists") else false
+            }
+
+            if (!dataExists) {
+              val eventData = new java.util.HashMap[String, String]()
+              eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
+              eventData.put("filterSync", "Yes")
+              eventData.put("targetedSolution", solutionId)
+
+              pushProjectDashboardEvents(eventData, context)
+
+              println(s"Pushed event to Kafka for missing data in $tableName: $columnValuePairs")
+              println(s"eventData: $eventData")
+            } else {
+              println(s"Data already exists in $tableName for $columnValuePairs")
+            }
+          } else {
+            println(s"Table $tableName does not exist in Postgres")
+          }
         }
       }
     }
