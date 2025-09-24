@@ -540,55 +540,8 @@ class SurveyStreamFunction(config: SurveyStreamConfig)(implicit val mapTypeInfo:
     }
   }
 
-//  def checkExistenceOfFilterData(filterList: List[Map[String, String]], context: ProcessFunction[Event, Event]#Context, solutionId: String): Unit = {
-//    println("Checking existence of filter data...")
-//    filterList.foreach { filter =>
-//      val tableName = filter.getOrElse("table_name", "")
-//      val columnValuePairs = filter.filterKeys(_ != "table_name").filter { case (_, v) => v != null && v.nonEmpty }
-//      if (tableName.nonEmpty && columnValuePairs.nonEmpty) {
-//        val rowCountQuery = s"SELECT COUNT(*) AS row_count FROM $tableName"
-//        val rowCount = postgresUtil.executeQuery(rowCountQuery) { rs =>
-//          if (rs.next()) rs.getLong("row_count") else 0L
-//        }
-//        if (rowCount == 0) {
-//          println(s"Table $tableName has no rows → first time inserting data.")
-//        } else {
-//          println(s"Table $tableName has $rowCount rows, checking if data exists...")
-//          val whereClause = columnValuePairs.map { case (col, _) => s"""$col = ?""" }.mkString(" AND ")
-//          val params = columnValuePairs.values.toSeq
-//          val queryWithParams = params.foldLeft(s"SELECT EXISTS (SELECT 1 FROM $tableName WHERE $whereClause) AS data_exists") {
-//            case (q, v) => q.replaceFirst("\\?", s"'${v.replace("'", "''")}'")
-//          }
-//          println(s"Query with params: $queryWithParams")
-//          val exists = postgresUtil.executeQuery(queryWithParams) { rs =>
-//            if (rs.next()) rs.getBoolean("data_exists") else false
-//          }
-//          println(s"exits = $exists")
-//          if (!exists) {
-//            // Check status in dashboard_metadata
-//            val statusQuery = s"SELECT status FROM ${config.dashboard_metadata} WHERE entity_id = '$solutionId'"
-//            val statusResult = postgresUtil.fetchData(statusQuery)
-//            val statusOpt = statusResult.headOption.flatMap(_.get("status")).collect { case s if s != null => s.toString }
-//            if (statusOpt.exists(s => s == "Success" || s.nonEmpty)) {
-//              println(s"data doesn't exists also dashboard already created hence to sync the table pushing the message to the kafka Topic")
-//              val eventData = new java.util.HashMap[String, String]()
-//              eventData.put("targetedSolution", solutionId)
-//              eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
-//              eventData.put("filterSync", "Yes")
-//              pushSurveyDashboardEvents(eventData, context)
-//              println(s"Pushed event to Kafka for missing data in $tableName: $columnValuePairs")
-//              println(s"eventData: $eventData")
-//            } else {
-//              println(s"Status is not 'success' for solution_id=$solutionId, skipping Kafka message.")
-//            }
-//          }
-//        }
-//      }
-//    }
-//  }
-
   def checkExistenceOfFilterData(filterList: List[Map[String, String]], context: ProcessFunction[Event, Event]#Context, solutionId: String): Unit = {
-    println("Checking existence of filter data...")
+    println(">>>>>>>>>>>>>> Checking existence of filter data...")
     filterList.foreach { filter =>
       val tableName = filter.getOrElse("table_name", "")
       val columnValuePairs = filter.filterKeys(_ != "table_name").filter { case (_, v) => v != null && v.nonEmpty }
@@ -602,22 +555,26 @@ class SurveyStreamFunction(config: SurveyStreamConfig)(implicit val mapTypeInfo:
           if (rs.next()) rs.getBoolean("data_exists") else false
         }
         if (!exists) {
-          // Check status in dashboard_metadata
           val statusQuery = s"SELECT status FROM ${config.dashboard_metadata} WHERE entity_id = '$solutionId'"
           val statusResult = postgresUtil.fetchData(statusQuery)
           val statusOpt = statusResult.headOption.flatMap(_.get("status")).collect { case s if s != null => s.toString }
-          if (statusOpt.exists(s => s == "Success" || s.nonEmpty)) {
-            val eventData = new java.util.HashMap[String, String]()
-            eventData.put("targetedSolution", solutionId)
-            eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
-            eventData.put("filterSync", "Yes")
-            pushSurveyDashboardEvents(eventData, context)
-            println(s"Pushed event to Kafka for missing data in $tableName: $columnValuePairs")
-            println(s"eventData: $eventData")
-          } else {
-            println(s"Status is not 'success' for solution_id=$solutionId, skipping Kafka message.")
+          statusOpt match {
+            case Some("Success") =>
+              val eventData = new java.util.HashMap[String, String]()
+              eventData.put("targetedSolution", solutionId)
+              eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
+              eventData.put("filterSync", "Yes")
+              pushSurveyDashboardEvents(eventData, context)
+              println(s"Pushed event to Kafka for missing data in $tableName: $columnValuePairs")
+              println(s"eventData: $eventData")
+
+            case Some("Failed") | Some("") | None =>
+              println(s"Status is empty or Failed for solution_id=$solutionId, stopping function.")
+              return
           }
         }
+      } else {
+        println(s"table doesn't exits or filter json is empty, hence stopping function.  ")
       }
     }
   }

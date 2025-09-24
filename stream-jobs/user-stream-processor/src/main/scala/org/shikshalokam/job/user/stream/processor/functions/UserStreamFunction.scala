@@ -116,10 +116,8 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
       )
     )
 
-    val createTenantTable = config.createTenantUserMetadataTable.replace("@tenantTable", tenantUserMetadataTable)
-    checkAndCreateTable(tenantUserMetadataTable, createTenantTable)
-    val createUsersTable = config.createTenantUserTable.replace("@usersTable", tenantUserTable)
-    checkAndCreateTable(tenantUserTable, createUsersTable)
+    checkAndCreateTable(tenantUserMetadataTable, config.createTenantUserMetadataTable.replace("@tenantTable", tenantUserMetadataTable))
+    checkAndCreateTable(tenantUserTable, config.createTenantUserTable.replace("@usersTable", tenantUserTable))
     checkAndCreateTable(userMetrics, config.createUserMetricsTable)
 
     if (tenantCode.nonEmpty) {
@@ -358,6 +356,9 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
   }
 
   def checkIfValueExists(tableName: String, columnName: String, value: String)(implicit postgresUtil: PostgresUtil): String = {
+    if (value == null || value.trim.isEmpty) {
+      return ""
+    }
     val rowCountQuery = s"SELECT COUNT(*) AS row_count FROM $tableName"
     val rowCount = postgresUtil.executeQuery(rowCountQuery) { rs =>
       if (rs.next()) rs.getLong("row_count") else 0
@@ -388,7 +389,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
 
   def checkExistenceOfDataAndPushMessageToKafka(resultList: List[String], context: ProcessFunction[Event, Event]#Context, tableName: String): Unit = {
     if (resultList.exists(s => s == null || s.trim.isEmpty)) {
-      return ""
+      return
     }
     if (resultList.contains("No")) {
       val eventData = new java.util.HashMap[String, String]()

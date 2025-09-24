@@ -14,6 +14,10 @@ class ObservationMetabaseEventSource extends SourceFunction[Event] {
     ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.UPDATE_FILTER_EVENT2), 0, 0))
     ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.METABASE_DASHBOARD_EVENT_3), 0, 0))
     ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.MULTISOLUTION_EVENT), 0, 0))
+    ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.MULTISOLUTION_EVENT_2), 0, 0))
+    ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.UPDATE_FILTER_EVENT), 0, 0))
+    ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.UPDATE_FILTER_EVENT_2), 0, 0))
+    ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.UPDATE_FILTER_EVENT_3), 0, 0))
   }
 
   override def cancel(): Unit = {}

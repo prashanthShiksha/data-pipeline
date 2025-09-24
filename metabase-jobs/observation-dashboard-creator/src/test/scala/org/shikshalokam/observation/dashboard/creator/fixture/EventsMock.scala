@@ -12,7 +12,11 @@ object EventsMock {
 
   val MULTISOLUTION_EVENT: String = """{"reportType":"Observation","publishedAt":"2025-09-11 12:44:17","dashboardData":{"targetedProgram":"688b43a7ab139a00141e1bed","targetedSolution":"688b43ab2df127c1bf2b0369","isRubric":"false","entityType":"Social Studies"},"_id":"84b55572-3134-4906-b6d6-d5fade1f8d8d"}"""
 
-  val UPDATE_FILTER_EVENT: String = """{"reportType":"Observation","publishedAt":"2025-09-22 11:44:46","dashboardData":{"filterSync":"Yes","targetedSolution":"688b43ab2df127c1bf2b0369","filterTable":"688b43ab2df127c1bf2b0369_status"},"_id":"59d39c99-d9b0-4769-af11-a39ba7f1a7f4"}"""
+  val MULTISOLUTION_EVENT_2: String = """{"reportType":"Observation","publishedAt":"2025-09-24 10:22:49","dashboardData":{"targetedProgram":"68b14cfdab139a00141e2e6c","targetedSolution":"68b151692df127c1bf2b2de4","isRubric":"true","entityType":"cluster","admin":"1"},"_id":"d624bcd4-0027-4c81-b47f-87a44063785a"}"""
 
-  val UPDATE_FILTER_EVENT2: String = """{"reportType":"Project","publishedAt":"2025-09-22 22:50:22","dashboardData":{"filterTable":"local_projects","filterSync":"Yes"},"_id":"79e2ad58-db0a-4f27-91e7-f84f4a25c1c5"}"""
+  val UPDATE_FILTER_EVENT: String = """{"reportType":"Observation","publishedAt":"2025-09-24 10:26:03","dashboardData":{"targetedSolution":"68b151692df127c1bf2b2de4","filterTable":"68b151692df127c1bf2b2de4_status","filterSync":"Yes"},"_id":"fadaae4c-9304-4d75-b591-ccaf2721c446"}"""
+
+  val UPDATE_FILTER_EVENT_2: String = """{"reportType":"Observation","publishedAt":"2025-09-24 10:26:04","dashboardData":{"targetedSolution":"68b151692df127c1bf2b2de4","filterTable":"68b151692df127c1bf2b2de4_domain","filterSync":"Yes"},"_id":"4433ecef-99c4-4b16-9be2-7867a0d26623"}"""
+
+  val UPDATE_FILTER_EVENT_3: String = """{"reportType":"Observation","publishedAt":"2025-09-24 10:26:04","dashboardData":{"targetedSolution":"68b151692df127c1bf2b2de4","filterTable":"68b151692df127c1bf2b2de4_questions","filterSync":"Yes"},"_id":"38d05ff5-b3af-4d81-9d8a-8fed80bf1262"}"""
 }

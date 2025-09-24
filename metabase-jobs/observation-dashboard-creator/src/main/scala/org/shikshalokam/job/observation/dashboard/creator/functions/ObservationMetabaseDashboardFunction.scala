@@ -173,12 +173,14 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
       }
 
       if (filterSync.nonEmpty){
-        val searchTableReponse = metabaseUtil.searchTable(filterTable, databaseId)
-        val filterTableId: Int = extractTableId(searchTableReponse)
+        println(s"Started syncing the $filterTable table ")
+        val searchTableResponse = metabaseUtil.searchTable(filterTable, databaseId)
+        val filterTableId: Int = extractTableId(searchTableResponse)
         if (filterTableId != -1) {
           metabaseUtil.discardValues(filterTableId)
           metabaseUtil.rescanValues(filterTableId)
         }
+        println(s"Finished syncing the $filterTable table ")
       }
 
       def extractTableId(response: String): Int = {

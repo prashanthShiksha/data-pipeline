@@ -378,7 +378,7 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
                         completedDate, entityType, entityId, entityName, entityExternalId, parentOneObservedName, parentOneObservedId, parentTwoObservedName, parentTwoObservedId, parentThreeObservedName, parentThreeObservedId,
                         parentFourObservedName, parentFourObservedId, parentFiveObservedName, parentFiveObservedId)
 
-                      if(!isRubric) {checkExistenceOfFilterData(domainDashboardFilters, context, solutionId)}
+                      checkExistenceOfFilterData(domainDashboardFilters, context, solutionId)
                       postgresUtil.executePreparedUpdate(insertCriteriaQuery, criteriaParams, domainTable, solutionId)
                     }
                   }
@@ -632,7 +632,7 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
       }
 
       def checkExistenceOfFilterData(filterList: List[Map[String, String]], context: ProcessFunction[Event, Event]#Context, solutionId: String): Unit = {
-        println(">>>>>>>>>>>>>>Checking existence of filter data...")
+        println(">>>>>>>>>>>>>> Checking existence of filter data...")
         filterList.foreach { filter =>
           val tableName = filter.getOrElse("table_name", "")
           val columnValuePairs = filter.filterKeys(_ != "table_name").filter { case (_, v) => v != null && v.nonEmpty }
@@ -646,22 +646,26 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
               if (rs.next()) rs.getBoolean("data_exists") else false
             }
             if (!exists) {
-              // Check status in dashboard_metadata
               val statusQuery = s"SELECT status FROM ${config.dashboard_metadata} WHERE entity_id = '$solutionId'"
               val statusResult = postgresUtil.fetchData(statusQuery)
               val statusOpt = statusResult.headOption.flatMap(_.get("status")).collect { case s if s != null => s.toString }
-              if (statusOpt.exists(s => s == "Success" || s.nonEmpty)) {
-                val eventData = new java.util.HashMap[String, String]()
-                eventData.put("targetedSolution", solutionId)
-                eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
-                eventData.put("filterSync", "Yes")
-                pushObservationDashboardEvents(eventData, context)
-                println(s"Pushed event to Kafka for missing data in $tableName: $columnValuePairs")
-                println(s"eventData: $eventData")
-              } else {
-                println(s"Status is not 'success' for solution_id=$solutionId, skipping Kafka message.")
+              statusOpt match {
+                case Some("Success") =>
+                  val eventData = new java.util.HashMap[String, String]()
+                  eventData.put("targetedSolution", solutionId)
+                  eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
+                  eventData.put("filterSync", "Yes")
+                  pushObservationDashboardEvents(eventData, context)
+                  println(s"Pushed event to Kafka for missing data in $tableName: $columnValuePairs")
+                  println(s"eventData: $eventData")
+
+                case Some("Failed") | Some("") | None =>
+                  println(s"Status is empty or Failed for solution_id=$solutionId, stopping function.")
+                  return
               }
             }
+          } else {
+            println(s"table doesn't exits or filter json is empty, hence stopping function.  ")
           }
         }
       }
