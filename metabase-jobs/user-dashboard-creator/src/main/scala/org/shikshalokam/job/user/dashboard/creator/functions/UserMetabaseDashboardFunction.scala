@@ -59,12 +59,35 @@ class UserMetabaseDashboardFunction(config: UserMetabaseDashboardConfig)(implici
     val reportConfig: String = config.reportConfig
     val metabaseApiKey: String = config.metabaseApiKey
     val tenantCode: String = event.tenantCode
+    val filterSync: String = event.filterSync
+    val filterTable: String = event.filterTable
     val tenantUserMetadataTable = s"${tenantCode}_users_metadata"
     val tenantUserTable = s"${tenantCode}_users"
     val storedTableIds = TrieMap.empty[(Int, String), Int]
     val storedColumnIds = TrieMap.empty[(Int, String), Int]
 
     println("\n-->> Process Report Admin User Metrics Dashboard")
+    if (filterSync.nonEmpty){
+      val searchTableResponse = metabaseUtil.searchTable(filterTable, databaseId)
+      val filterTableId: Int = extractTableId(searchTableResponse)
+      if (filterTableId != -1) {
+        metabaseUtil.discardValues(filterTableId)
+        metabaseUtil.rescanValues(filterTableId)
+      } else {
+        println(s"Table does not exits in the metabase DB")
+      }
+      println("Successfully updated the filters values")
+    }
+
+    def extractTableId(response: String): Int = {
+      val json = ujson.read(response)
+      val dataArr = json("data").arr
+      if (dataArr.nonEmpty && dataArr(0).obj.contains("table_id")) {
+        dataArr(0)("table_id").num.toInt
+      } else {
+        -1
+      }
+    }
 
     val (reportAdminPresent, reportAdminCollectionId) = validateCollection("User Activity", "Admin")
     if (reportAdminPresent && reportAdminCollectionId != 0) {
