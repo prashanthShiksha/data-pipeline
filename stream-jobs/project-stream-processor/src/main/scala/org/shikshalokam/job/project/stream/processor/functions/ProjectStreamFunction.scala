@@ -400,7 +400,7 @@ class ProjectStreamFunction(config: ProjectStreamConfig)(implicit val mapTypeInf
     }
 
     def checkExistenceOfFilterData(filterList: List[Map[String, String]], context: ProcessFunction[Event, Event]#Context, solutionId: String): Unit = {
-      println("Checking existence of filter data...")
+      println(">>>>>>>>>>>>>>>>>>Checking existence of filter data...")
 
       filterList.foreach { filter =>
         val tableName = filter.getOrElse("table_name", "")
@@ -410,7 +410,6 @@ class ProjectStreamFunction(config: ProjectStreamConfig)(implicit val mapTypeInf
           // Step 1: Check if table exists
           val tableExistsQuery =
             s"SELECT to_regclass('$tableName') IS NOT NULL AS table_exists"
-
           val tableExists = postgresUtil.executeQuery(tableExistsQuery) { rs =>
             if (rs.next()) rs.getBoolean("table_exists") else false
           }
@@ -428,19 +427,19 @@ class ProjectStreamFunction(config: ProjectStreamConfig)(implicit val mapTypeInf
             val dataExists = postgresUtil.executeQuery(queryWithParams) { rs =>
               if (rs.next()) rs.getBoolean("data_exists") else false
             }
-
-            if (!dataExists) {
+            val rowCountQuery = s"SELECT COUNT(*) AS row_count FROM $tableName"
+            val rowCount = postgresUtil.executeQuery(rowCountQuery) { rs =>
+              if (rs.next()) rs.getLong("row_count") else 0
+            }
+            if (!dataExists && rowCount > 0) {
               val eventData = new java.util.HashMap[String, String]()
               eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
               eventData.put("filterSync", "Yes")
               eventData.put("targetedSolution", solutionId)
-
+              println(s"As DataExists = $dataExists & rowCount = $rowCount hence pushing event")
               pushProjectDashboardEvents(eventData, context)
-
-              println(s"Pushed event to Kafka for missing data in $tableName: $columnValuePairs")
-              println(s"eventData: $eventData")
             } else {
-              println(s"Data already exists in $tableName for $columnValuePairs")
+              println(s"As DataExists = $dataExists & rowCount = $rowCount hence no event is pushed")
             }
           } else {
             println(s"Table $tableName does not exist in Postgres")

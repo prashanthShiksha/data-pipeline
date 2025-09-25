@@ -18,5 +18,5 @@ object EventsMock {
 
   val TEST_EVENT_1: String = """{"reportType":"Project","publishedAt":"2025-09-23 22:50:27","dashboardData":{"targetedSolution":"68b7ec7dcd4236001401c5d9"},"_id":"f46d6318-5f10-4209-8be5-931037e78ca5"}"""
 
-  val UPDATE_FILTER_DATA_EVENT: String = """{"reportType":"Project","publishedAt":"2025-09-22 20:18:52","dashboardData":{"targetedSolution":"68b7ec7dcd4236001401c5d5","filterTable":"local_projects","filterSync":"Yes"},"_id":"c63dae02-6a01-4bde-a4db-bf7709873386"}"""
+  val UPDATE_FILTER_DATA_EVENT: String = """{"reportType":"Project","publishedAt":"2025-09-25 16:26:35","dashboardData":{"targetedSolution":"68b7ec7dcd4236001401c5d9","filterTable":"local_projects","filterSync":"Yes"},"_id":"831c2c21-88a6-4d41-bc2c-24ed12000a2a"}"""
 }

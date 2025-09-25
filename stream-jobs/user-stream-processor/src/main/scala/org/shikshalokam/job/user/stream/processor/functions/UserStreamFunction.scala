@@ -131,7 +131,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
         }
         processUsers(tenantUserTable, userId)
         val finalUserDashboardFilterList: List[String] = userDashboardFiltersList.toList
-        checkExistenceOfDataAndPushMessageToKafka(finalUserDashboardFilterList, context, tenantUserTable)
+        checkExistenceOfDataAndPushMessageToKafka(finalUserDashboardFilterList, context, tenantUserTable, event.tenantCode)
 
         val resultList = ListBuffer[String]()
         resultList += checkIfValueExists(tenantUserMetadataTable.replace("\"", ""), "attribute_value", professionalRoleName)
@@ -180,7 +180,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
         }
 
         val finalResultList: List[String] = resultList.toList
-        checkExistenceOfDataAndPushMessageToKafka(finalResultList, context, tenantUserMetadataTable)
+        checkExistenceOfDataAndPushMessageToKafka(finalResultList, context, tenantUserMetadataTable, event.tenantCode)
       } else if (eventType == "delete") {
         deleteData(tenantUserTable, userId)
       }
@@ -192,7 +192,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
       }
       userMetric(tenantUserTable)
       val finalUserMetricDashboardFiltersList: List[String] = userMetricDashboardFiltersList.toList
-      checkExistenceOfDataAndPushMessageToKafka(finalUserMetricDashboardFiltersList, context, userMetrics)
+      checkExistenceOfDataAndPushMessageToKafka(finalUserMetricDashboardFiltersList, context, userMetrics, event.tenantCode)
     } else {
       println("Tenant Code is Empty")
     }
@@ -387,7 +387,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
     }
   }
 
-  private def checkExistenceOfDataAndPushMessageToKafka(resultList: List[String], context: ProcessFunction[Event, Event]#Context, tableName: String): Unit = {
+  private def checkExistenceOfDataAndPushMessageToKafka(resultList: List[String], context: ProcessFunction[Event, Event]#Context, tableName: String, tenantCode: String): Unit = {
     if (resultList.exists(s => s == null || s.trim.isEmpty)) {
       return
     }
@@ -395,6 +395,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
       val eventData = new java.util.HashMap[String, String]()
       eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
       eventData.put("filterSync", "Yes")
+      eventData.put("tenantCode", tenantCode)
       pushUserDashboardEvents(eventData, context)
       println(s"eventData: $eventData")
     } else {
