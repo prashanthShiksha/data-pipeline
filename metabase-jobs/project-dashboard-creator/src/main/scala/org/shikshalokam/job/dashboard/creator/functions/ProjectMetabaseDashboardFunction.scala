@@ -267,18 +267,18 @@ class ProjectMetabaseDashboardFunction(config: ProjectMetabaseDashboardConfig)(i
 
         println(s">>>>>>>>>>> Completed Processing Metabase Project Dashboards >>>>>>>>>>>>")
 
-        if (filterSync.nonEmpty){
-          val searchTableReponse = metabaseUtil.searchTable(filterTable, databaseId)
-          val filterTableId: Int = extractTableId(searchTableReponse)
+        if (filterSync.nonEmpty) {
+          val searchTableResponse = metabaseUtil.searchTable(filterTable, databaseId)
+          val filterTableId: Int = extractTableId(searchTableResponse)
           if (filterTableId != -1) {
             metabaseUtil.discardValues(filterTableId)
             metabaseUtil.rescanValues(filterTableId)
+          } else {
+            println(s"Table does not exits in the metabase DB")
           }
           println("Successfully updated the filters values")
         }
     }
-
-
 
     def extractTableId(response: String): Int = {
       val json = ujson.read(response)

@@ -73,6 +73,8 @@ class UserMetabaseDashboardFunction(config: UserMetabaseDashboardConfig)(implici
       if (filterTableId != -1) {
         metabaseUtil.discardValues(filterTableId)
         metabaseUtil.rescanValues(filterTableId)
+      } else {
+        println(s"Table does not exits in the metabase DB")
       }
       println("Successfully updated the filters values")
     }
