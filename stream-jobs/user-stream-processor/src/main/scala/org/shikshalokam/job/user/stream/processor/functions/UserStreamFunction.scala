@@ -338,7 +338,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
     }
   }
 
-  def checkAndCreateTable(tableName: String, createTableQuery: String): Unit = {
+  private def checkAndCreateTable(tableName: String, createTableQuery: String): Unit = {
     val checkTableExistsQuery =
       s"""SELECT EXISTS (
          |  SELECT FROM information_schema.tables
@@ -355,7 +355,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
     }
   }
 
-  def checkIfValueExists(tableName: String, columnName: String, value: String)(implicit postgresUtil: PostgresUtil): String = {
+  private def checkIfValueExists(tableName: String, columnName: String, value: String)(implicit postgresUtil: PostgresUtil): String = {
     if (value == null || value.trim.isEmpty) {
       return ""
     }
@@ -387,7 +387,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
     }
   }
 
-  def checkExistenceOfDataAndPushMessageToKafka(resultList: List[String], context: ProcessFunction[Event, Event]#Context, tableName: String): Unit = {
+  private def checkExistenceOfDataAndPushMessageToKafka(resultList: List[String], context: ProcessFunction[Event, Event]#Context, tableName: String): Unit = {
     if (resultList.exists(s => s == null || s.trim.isEmpty)) {
       return
     }

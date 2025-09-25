@@ -5,7 +5,7 @@ import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.shikshalokam.job.observation.stream.processor.domain.Event
 import org.shikshalokam.job.observation.stream.processor.task.ObservationStreamConfig
-import org.shikshalokam.job.util.{MetabaseUtil, PostgresUtil, ScalaJsonUtil}
+import org.shikshalokam.job.util.{PostgresUtil, ScalaJsonUtil}
 import org.shikshalokam.job.{BaseProcessFunction, Metrics}
 import org.slf4j.LoggerFactory
 
@@ -14,7 +14,7 @@ import java.time.{Instant, ZoneId}
 import java.time.format.DateTimeFormatter
 import scala.collection.immutable._
 
-class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val mapTypeInfo: TypeInformation[Event], @transient var postgresUtil: PostgresUtil = null,@transient var metabaseUtil: MetabaseUtil = null)
+class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val mapTypeInfo: TypeInformation[Event], @transient var postgresUtil: PostgresUtil = null)
   extends BaseProcessFunction[Event, Event](config) {
 
   private[this] val logger = LoggerFactory.getLogger(classOf[ObservationStreamFunction])
@@ -642,32 +642,29 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
             val queryWithParams = params.foldLeft(s"SELECT EXISTS (SELECT 1 FROM $tableName WHERE $whereClause) AS data_exists") {
               case (q, v) => q.replaceFirst("\\?", s"'${v.replace("'", "''")}'")
             }
-            val exists = postgresUtil.executeQuery(queryWithParams) { rs =>
+            val dataExists = postgresUtil.executeQuery(queryWithParams) { rs =>
               if (rs.next()) rs.getBoolean("data_exists") else false
             }
-            if (!exists) {
-              val statusQuery = s"SELECT status FROM ${config.dashboard_metadata} WHERE entity_id = '$solutionId'"
-              val statusResult = postgresUtil.fetchData(statusQuery)
-              val statusOpt = statusResult.headOption.flatMap(_.get("status")).collect { case s if s != null => s.toString }
-              statusOpt match {
-                case Some("Success") =>
-                  val eventData = new java.util.HashMap[String, String]()
-                  eventData.put("targetedSolution", solutionId)
-                  eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
-                  eventData.put("filterSync", "Yes")
-                  pushObservationDashboardEvents(eventData, context)
-                  println(s"Pushed event to Kafka for missing data in $tableName: $columnValuePairs")
-                  println(s"eventData: $eventData")
-
-                case Some("Failed") | Some("") | None =>
-                  println(s"Status is empty or Failed for solution_id=$solutionId, stopping function.")
-                  return
-              }
+            val rowCountQuery = s"SELECT COUNT(*) AS row_count FROM $tableName"
+            val rowCount = postgresUtil.executeQuery(rowCountQuery) { rs =>
+              if (rs.next()) rs.getLong("row_count") else 0
+            }
+            if (!dataExists && rowCount > 0) {
+              val eventData = new java.util.HashMap[String, String]()
+              eventData.put("targetedSolution", solutionId)
+              eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
+              eventData.put("filterSync", "Yes")
+              println(s"As dataExits = $dataExists, rowCount = $rowCount hence pushing the message to kafka.")
+              pushObservationDashboardEvents(eventData, context)
+            } else {
+              println(s"As dataExits = $dataExists, rowCount = $rowCount hence stopping function.")
+              return
             }
           } else {
             println(s"table doesn't exits or filter json is empty, hence stopping function.  ")
           }
         }
+        println(s">>>>>>>>>>>>>> Completed checking existence of filter data...")
       }
 
       def pushObservationDashboardEvents(dashboardData: util.HashMap[String, String], context: ProcessFunction[Event, Event]#Context): util.HashMap[String, AnyRef] = {

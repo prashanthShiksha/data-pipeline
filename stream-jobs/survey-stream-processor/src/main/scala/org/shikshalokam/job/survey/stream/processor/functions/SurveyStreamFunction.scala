@@ -203,7 +203,7 @@ class SurveyStreamFunction(config: SurveyStreamConfig)(implicit val mapTypeInfo:
 
       //CREATE TABLE IF NOT EXISTS
       postgresUtil.checkAndCreateTable(surveyStatusTable, config.createSurveyStatusTableQuery.replace("@surveyStatusTable", surveyStatusTable))
-      postgresUtil.executeUpdate(AlterSurveyStatusTableQuery,surveyStatusTable,solutionId)
+      postgresUtil.executeUpdate(AlterSurveyStatusTableQuery, surveyStatusTable, solutionId)
 
       val upsertSurveyDataQuery =
         s"""INSERT INTO $surveyStatusTable (
@@ -540,7 +540,7 @@ class SurveyStreamFunction(config: SurveyStreamConfig)(implicit val mapTypeInfo:
     }
   }
 
-  def checkExistenceOfFilterData(filterList: List[Map[String, String]], context: ProcessFunction[Event, Event]#Context, solutionId: String): Unit = {
+  private def checkExistenceOfFilterData(filterList: List[Map[String, String]], context: ProcessFunction[Event, Event]#Context, solutionId: String): Unit = {
     println(">>>>>>>>>>>>>> Checking existence of filter data...")
     filterList.foreach { filter =>
       val tableName = filter.getOrElse("table_name", "")
@@ -551,32 +551,29 @@ class SurveyStreamFunction(config: SurveyStreamConfig)(implicit val mapTypeInfo:
         val queryWithParams = params.foldLeft(s"SELECT EXISTS (SELECT 1 FROM $tableName WHERE $whereClause) AS data_exists") {
           case (q, v) => q.replaceFirst("\\?", s"'${v.replace("'", "''")}'")
         }
-        val exists = postgresUtil.executeQuery(queryWithParams) { rs =>
+        val dataExists = postgresUtil.executeQuery(queryWithParams) { rs =>
           if (rs.next()) rs.getBoolean("data_exists") else false
         }
-        if (!exists) {
-          val statusQuery = s"SELECT status FROM ${config.dashboard_metadata} WHERE entity_id = '$solutionId'"
-          val statusResult = postgresUtil.fetchData(statusQuery)
-          val statusOpt = statusResult.headOption.flatMap(_.get("status")).collect { case s if s != null => s.toString }
-          statusOpt match {
-            case Some("Success") =>
-              val eventData = new java.util.HashMap[String, String]()
-              eventData.put("targetedSolution", solutionId)
-              eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
-              eventData.put("filterSync", "Yes")
-              pushSurveyDashboardEvents(eventData, context)
-              println(s"Pushed event to Kafka for missing data in $tableName: $columnValuePairs")
-              println(s"eventData: $eventData")
-
-            case Some("Failed") | Some("") | None =>
-              println(s"Status is empty or Failed for solution_id=$solutionId, stopping function.")
-              return
-          }
+        val rowCountQuery = s"SELECT COUNT(*) AS row_count FROM $tableName"
+        val rowCount = postgresUtil.executeQuery(rowCountQuery) { rs =>
+          if (rs.next()) rs.getLong("row_count") else 0
+        }
+        if (!dataExists && rowCount > 0) {
+          val eventData = new java.util.HashMap[String, String]()
+          eventData.put("targetedSolution", solutionId)
+          eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
+          eventData.put("filterSync", "Yes")
+          println(s"As dataExits = $dataExists, rowCount = $rowCount hence pushing the message to kafka.")
+          pushSurveyDashboardEvents(eventData, context)
+        } else {
+          println(s"As dataExits = $dataExists, rowCount = $rowCount hence stopping function.")
+          return
         }
       } else {
         println(s"table doesn't exits or filter json is empty, hence stopping function.  ")
       }
     }
+    println(s">>>>>>>>>>>>>> Completed checking existence of filter data...")
   }
 
   private def pushSurveyDashboardEvents(dashboardData: util.HashMap[String, String], context: ProcessFunction[Event, Event]#Context): util.HashMap[String, AnyRef] = {

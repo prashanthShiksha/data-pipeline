@@ -145,13 +145,6 @@ class ProjectStreamFunction(config: ProjectStreamConfig)(implicit val mapTypeInf
       val programDescription = event.programDescription
       val privateProgram = event.privateProgram
 
-      val solutionDashboardFilters: List[Map[String, String]] = List(
-        Map(
-          "program_name" -> programName,
-          "table_name" -> config.solutions
-        )
-      )
-
       val upsertSolutionQuery =
         s"""INSERT INTO ${config.solutions} (solution_id, external_id, name, description, duration, categories, program_id, program_name, program_external_id, program_description, private_program)
            |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -175,7 +168,6 @@ class ProjectStreamFunction(config: ProjectStreamConfig)(implicit val mapTypeInf
         // Update parameters (matching columns in the ON CONFLICT clause)
         solutionExternalId, solutionName, solutionDescription, projectDuration, projectCategories, programId, programName, programExternalId, programDescription, privateProgram
       )
-      checkExistenceOfFilterData(solutionDashboardFilters, context, solutionId)
       postgresUtil.executePreparedUpdate(upsertSolutionQuery, solutionParams, config.solutions, solutionId)
 
       /**
