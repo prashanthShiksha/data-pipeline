@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Load environment variables from db.env
+# Load environment variables from migration.env
 if [ -f "./migration.env" ]; then
     export $(grep -v '^#' ./migration.env | xargs)
 else
