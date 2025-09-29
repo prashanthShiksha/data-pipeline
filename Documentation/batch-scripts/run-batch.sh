@@ -11,10 +11,10 @@ echo "RUNNING JOB"
 echo ""
 echo "$(date)"
 echo "====================================="
-echo "Batch script has triggered"
+echo "Python Batch script has triggered"
 
 # Correct variable usage with $
 . "$VENV_PATH/bin/activate" && python3 "$SCRIPT_PATH"
 
-echo "Batch script has finished"
+echo "Python Batch script has finished"
 echo "*************************************"

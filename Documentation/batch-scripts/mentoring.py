@@ -12,8 +12,8 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 
 # --- DB Configs ---
-SOURCE_DB1 = dict(config["SOURCE_DB1"])
-SOURCE_DB2 = dict(config["SOURCE_DB2"])
+MENTORING = dict(config["SOURCE_DB1"])
+USERS = dict(config["SOURCE_DB2"])
 
 # --- Kafka Config ---
 KAFKA_BROKER = config["KAFKA"]["broker"]
@@ -30,10 +30,18 @@ producer = KafkaProducer(
 
 def push_event(event: dict):
     """Push JSON event to Kafka"""
-    producer.send(TOPIC, event)
+    try:
+        future = producer.send(TOPIC, event)
+        future.get(timeout=10)  # wait for Kafka ack
+        logging.info(f"Event delivered: {event.get('entity', 'unknown')} - {event.get('eventType', 'unknown')}")
+    except Exception as e:
+        logging.error(f"Failed to deliver event to Kafka: {e}")
+        raise
 
 # ---------------- Logging Setup ----------------
-LOG_DIR = "logs"
+LOG_DIR = config["LOGGING"].get("log_dir", "logs")  # fallback to "logs" if missing
+RETENTION_DAYS = int(config["LOGGING"].get("retention_days", 7))
+
 os.makedirs(LOG_DIR, exist_ok=True)
 
 log_file = os.path.join(LOG_DIR, f"batch_run_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.log")
@@ -44,12 +52,12 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 
-# Cleanup logs older than 7 days
+# Cleanup logs older than retention_days
 for f in os.listdir(LOG_DIR):
     fpath = os.path.join(LOG_DIR, f)
     if os.path.isfile(fpath):
         mtime = datetime.fromtimestamp(os.path.getmtime(fpath), timezone.utc)
-        if mtime < datetime.now(timezone.utc) - timedelta(days=7):
+        if mtime < datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS):
             os.remove(fpath)
 
 # ---------------- State Management ----------------
@@ -77,7 +85,7 @@ def update_last_run(entity: str, ts: datetime):
 # ---------------- Sessions ----------------
 def process_sessions():
     logging.info("Processing sessions...")
-    conn = psycopg2.connect(**SOURCE_DB1)
+    conn = psycopg2.connect(**MENTORING)
     cur = conn.cursor()
 
     last_run = get_last_run("sessions")
@@ -175,7 +183,7 @@ def process_sessions():
 # ---------------- Attendance ----------------
 def process_attendance():
     logging.info("Processing attendance...")
-    conn = psycopg2.connect(**SOURCE_DB1)
+    conn = psycopg2.connect(**MENTORING)
     cur = conn.cursor()
     last_run = get_last_run("attendance")
 
@@ -226,7 +234,7 @@ def process_attendance():
 # ---------------- Connections ----------------
 def process_connections():
     logging.info("Processing connections...")
-    conn = psycopg2.connect(**SOURCE_DB1)
+    conn = psycopg2.connect(**MENTORING)
     cur = conn.cursor()
     last_run = get_last_run("connections")
 
@@ -282,7 +290,7 @@ def process_connections():
 # ---------------- Org Mentor Ratings ----------------
 def process_orgMentorRatings():
     logging.info("Processing org mentor ratings...")
-    conn = psycopg2.connect(**SOURCE_DB1)
+    conn = psycopg2.connect(**MENTORING)
     cur = conn.cursor()
     last_run = get_last_run("orgMentorRatings")
 
@@ -330,7 +338,7 @@ def process_orgMentorRatings():
 # ---------------- Org Roles ----------------
 def process_orgRoles():
     logging.info("Processing org roles...")
-    conn = psycopg2.connect(**SOURCE_DB2)
+    conn = psycopg2.connect(**USERS)
     cur = conn.cursor()
     last_run = get_last_run("orgRoles")
 
