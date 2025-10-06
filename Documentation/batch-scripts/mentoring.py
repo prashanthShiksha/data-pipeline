@@ -1,9 +1,12 @@
-import os, json, psycopg2, logging
+import os
+import json
+import psycopg2
+import logging
 from kafka import KafkaProducer
 from datetime import datetime, timedelta
 from collections import defaultdict
 import json as pyjson
-from datetime import datetime, timedelta, timezone
+from datetime import  timezone
 import configparser
 
 
@@ -231,7 +234,7 @@ def process_attendance():
     cur.close()
     conn.close()
 
-# ---------------- Connections ----------------
+# ---------------- From Connections Table for Status as ACCEPTED ----------------
 def process_connections():
     logging.info("Processing connections...")
     conn = psycopg2.connect(**MENTORING)
@@ -287,6 +290,62 @@ def process_connections():
     cur.close()
     conn.close()
 
+# ---------------- From Connection_Requests Table for Status as REQUESTED and REJECTED ----------------
+def process_connection_requests():
+        logging.info("Processing connection_requests...")
+        conn = psycopg2.connect(**MENTORING)
+        cur = conn.cursor()
+        last_run = get_last_run("connection_requests")
+
+        if last_run is None:
+            cur.execute("""
+                SELECT cr.id, cr.tenant_code, cr.user_id, cr.friend_id, cr.status,
+                       cr.created_by, cr.updated_by, cr.created_at, cr.updated_at,
+                       ue.organization_id, cr.deleted_at
+                FROM connection_requests cr
+                LEFT JOIN user_extensions ue ON cr.user_id = ue.user_id
+            """)
+        else:
+            cur.execute("""
+                SELECT cr.id, cr.tenant_code, cr.user_id, cr.friend_id, cr.status,
+                       cr.created_by, cr.updated_by, cr.created_at, cr.updated_at,
+                       ue.organization_id, cr.deleted_at
+                FROM connection_requests cr
+                LEFT JOIN user_extensions ue ON cr.user_id = ue.user_id
+                WHERE cr.created_at > %s OR cr.updated_at > %s OR (cr.deleted_at IS NOT NULL AND cr.deleted_at > %s)
+            """, (last_run, last_run, last_run))
+
+        rows = cur.fetchall()
+        logging.info(f"Fetched {len(rows)} connection_requests")
+
+        for row in rows:
+            (conn_id, tenant_code, user_id, friend_id, status,
+             created_by, updated_by, created_at, updated_at, org_id, deleted_at) = row
+
+            event = {
+                "eventType": "create",
+                "entity": "connections",
+                "conn_id": conn_id,
+                "tenant_code": tenant_code,
+                "user_id": user_id,
+                "friend_id": friend_id,
+                "status": status,
+                "org_id": org_id,
+                "created_by": created_by,
+                "updated_by": updated_by,
+                "created_at": created_at,
+                "updated_at": updated_at,
+                "deleted_at": deleted_at,
+                "deleted": False
+            }
+            push_event(event)
+            producer.flush()
+
+        update_last_run("connection_requests", datetime.now(timezone.utc))
+
+        cur.close()
+        conn.close()
+
 # ---------------- Org Mentor Ratings ----------------
 def process_orgMentorRatings():
     logging.info("Processing org mentor ratings...")
@@ -335,110 +394,13 @@ def process_orgMentorRatings():
     cur.close()
     conn.close()
 
-# ---------------- Org Roles ----------------
-def process_orgRoles():
-    logging.info("Processing org roles...")
-    conn = psycopg2.connect(**USERS)
-    cur = conn.cursor()
-    last_run = get_last_run("orgRoles")
-
-    if last_run is None:
-        cur.execute("""
-            SELECT
-                uor.user_id,
-                o.id AS org_id,
-                o.name AS org_name,
-                o.code AS org_code,
-                r.id AS role_id,
-                r.title AS role_name,
-                uor.tenant_code,
-                uor.updated_at
-            FROM user_organization_roles uor
-            JOIN organizations o
-                ON uor.tenant_code = o.tenant_code
-               AND uor.organization_code = o.code
-            JOIN user_roles r
-                ON uor.role_id = r.id
-               AND r.organization_id = o.id
-        """)
-    else:
-        cur.execute("""
-            SELECT
-                uor.user_id,
-                o.id AS org_id,
-                o.name AS org_name,
-                o.code AS org_code,
-                r.id AS role_id,
-                r.title AS role_name,
-                uor.tenant_code,
-                uor.updated_at
-            FROM user_organization_roles uor
-            JOIN organizations o
-                ON uor.tenant_code = o.tenant_code
-               AND uor.organization_code = o.code
-            JOIN user_roles r
-                ON uor.role_id = r.id
-               AND r.organization_id = o.id
-            WHERE uor.updated_at > %s
-        """, (last_run,))
-
-    rows = cur.fetchall()
-    logging.info(f"Fetched {len(rows)} org roles")
-
-    users = defaultdict(lambda: {"organizations": defaultdict(list)})
-
-    for row in rows:
-        user_id, org_id, org_name, org_code, role_id, role_name, tenant_code, updated_at = row
-        user_entry = users[(user_id, tenant_code)]
-        orgs = user_entry["organizations"]
-        orgs[org_id].append({
-            "id": role_id,
-            "title": role_name,
-            "label": role_name
-        })
-        user_entry["userId"] = user_id
-        user_entry["tenant_code"] = tenant_code
-        user_entry["org_meta"] = user_entry.get("org_meta", {})
-        user_entry["org_meta"][org_id] = {
-            "id": org_id,
-            "name": org_name,
-            "code": org_code
-        }
-
-    for (user_id, tenant_code), data in users.items():
-        orgs_list = []
-        for org_id, roles in data["organizations"].items():
-            org_meta = data["org_meta"][org_id]
-            orgs_list.append({
-                "id": org_meta["id"],
-                "name": org_meta["name"],
-                "code": org_meta["code"],
-                "roles": roles
-            })
-
-        event = {
-            "eventType": "create",
-            "entity": "orgRoles",
-            "userId": data["userId"],
-            "tenant_code": data["tenant_code"],
-            "organizations": orgs_list,
-            "status": "ACTIVE",
-            "deleted": False
-        }
-        push_event(event)
-        producer.flush()
-
-    update_last_run("orgRoles", datetime.now(timezone.utc))
-    cur.close()
-    conn.close()
-
 # ---------------- Main ----------------
 def main():
     process_sessions()
     process_attendance()
     process_connections()
+    process_connection_requests()
     process_orgMentorRatings()
-    process_orgRoles()
 
 if __name__ == "__main__":
     main()

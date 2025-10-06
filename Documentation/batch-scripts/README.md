@@ -39,43 +39,38 @@ Helper wrapper that:
 
 ---
 
-## 🚀 How to Run
+# 🚀 How to Run
 
-### 1️⃣ Run with Python (manual way)
+## 1️⃣ Run with Python (manual way)
 
-```bash
-# Navigate to batch-scripts directory
-cd batch-scripts
+### Navigate to batch-scripts directory
+```cd batch-scripts ```
 
-# Create virtual environment (first time only)
-python -m venv venv
+### Create virtual environment (first time only)
+```python -m venv venv```
 
-# Activate virtual environment
-source venv/bin/activate
+### Activate virtual environment
+```source venv/bin/activate```
 
-# Install dependencies
-pip install -r requirements.txt
+### Install dependencies
+```pip install -r requirements.txt```
 
-# Run the script
-python mentoring.py
-✅ Logs will be generated in the logs/ folder.
+### Run the script
+```python mentoring.py``` [Logs will be generated in the logs/ folder.]
 
-2️⃣ Run with Shell Script (automated way)
-bash
-Copy code
-# Navigate to batch-scripts directory
-cd batch-scripts
+## 2️⃣ Run with Shell Script (automated way)
 
-# Make script executable (first time only)
-chmod +x trigger-batch-script.sh
+### Navigate to batch-scripts directory
+```cd batch-scripts```
 
-# Run the script
-./trigger-batch-script.sh
-This script ensures:
+### Make script executable (first time only)
+```chmod +x trigger-batch-script.sh```
 
-Virtual environment is created if missing.
+### Run the script
+```./trigger-batch-script.sh```
 
-Dependencies are installed automatically.
-
-mentoring.py runs without manual intervention.
-
+---
+#### This script ensures:
+* Virtual environment is created if missing.
+* Dependencies are installed automatically.
+* mentoring.py runs without manual intervention.
