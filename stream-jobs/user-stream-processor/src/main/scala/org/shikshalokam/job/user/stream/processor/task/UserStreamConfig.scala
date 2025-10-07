@@ -59,6 +59,19 @@ class UserStreamConfig(override val config: Config) extends BaseJobConfig(config
        |);
     """.stripMargin
 
+  val createOrgRolesTable: String =
+    s"""
+       |CREATE TABLE IF NOT EXISTS @orgRolesTable (
+       |    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+       |    user_id INT,
+       |    org_id INT,
+       |    org_name TEXT,
+       |    role_id INT,
+       |    role_name TEXT,
+       |    UNIQUE (user_id, org_id, role_id)
+       |);
+    """.stripMargin
+
   val createTenantUserTable: String =
     s"""
        |CREATE TABLE IF NOT EXISTS @usersTable (
