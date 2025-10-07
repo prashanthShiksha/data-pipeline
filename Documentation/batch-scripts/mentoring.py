@@ -174,7 +174,7 @@ def process_sessions():
             "medium": medium,
             "created_by": created_by,
             "updated_by": updated_by,
-            "deleted": False
+            "deleted": deleted_at is not None
         }
         push_event(event)
         producer.flush()
@@ -225,7 +225,7 @@ def process_attendance():
             "created_at": created_at,
             "updated_at": updated_at,
             "deleted_at": deleted_at,
-            "deleted": False
+            "deleted": deleted_at is not None
         }
         push_event(event)
         producer.flush()
@@ -280,7 +280,7 @@ def process_connections():
             "created_at": created_at,
             "updated_at": updated_at,
             "deleted_at": deleted_at,
-            "deleted": False
+            "deleted": deleted_at is not None
         }
         push_event(event)
         producer.flush()
@@ -336,7 +336,7 @@ def process_connection_requests():
                 "created_at": created_at,
                 "updated_at": updated_at,
                 "deleted_at": deleted_at,
-                "deleted": False
+                "deleted": deleted_at is not None
             }
             push_event(event)
             producer.flush()
@@ -355,14 +355,14 @@ def process_orgMentorRatings():
 
     if last_run is None:
         cur.execute("""
-            SELECT ue.user_id, ue.rating, ue.updated_at, ue.organization_id, ue.tenant_code, oe.name
+            SELECT ue.user_id, ue.rating, ue.updated_at, ue.organization_id, ue.tenant_code, ue.deleted_at, oe.name
             FROM user_extensions ue
             LEFT JOIN organization_extension oe ON ue.organization_id = oe.organization_id
             WHERE ue.rating IS NOT NULL AND ue.is_mentor = TRUE
         """)
     else:
         cur.execute("""
-            SELECT ue.user_id, ue.rating, ue.updated_at, ue.organization_id, ue.tenant_code, oe.name
+            SELECT ue.user_id, ue.rating, ue.updated_at, ue.organization_id, ue.tenant_code, ue.deleted_at, oe.name
             FROM user_extensions ue
             LEFT JOIN organization_extension oe ON ue.organization_id = oe.organization_id
             WHERE ue.rating IS NOT NULL AND ue.is_mentor = TRUE
@@ -373,7 +373,7 @@ def process_orgMentorRatings():
     logging.info(f"Fetched {len(rows)} mentor ratings")
 
     for row in rows:
-        user_id, rating, updated_at, organization_id, tenant_code, name = row
+        user_id, rating, updated_at, organization_id, tenant_code, deleted_at, name = row
         avg_rating = rating.get("average") if isinstance(rating, dict) else rating
 
         event = {
@@ -385,7 +385,7 @@ def process_orgMentorRatings():
             "mentor_id": user_id,
             "rating": avg_rating,
             "rating_updated_at": updated_at,
-            "deleted": False
+            "deleted": deleted_at is not None
         }
         push_event(event)
         producer.flush()
