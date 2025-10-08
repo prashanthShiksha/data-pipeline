@@ -71,6 +71,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
     val professionalRoleId = event.professionalRoleId
     val professionalSubroles = event.professionalSubroles
     val tenantUserMetadataTable: String = s""""${tenantCode}_users_metadata""""
+    val orgRolesTable: String = s""""${tenantCode}_org_roles""""
     val tenantUserTable: String = s""""${tenantCode}_users""""
     val userMetrics: String = config.userMetrics
     val eventType = event.eventType
@@ -121,6 +122,12 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
     checkAndCreateTable(userMetrics, config.createUserMetricsTable)
 
     if (tenantCode.nonEmpty) {
+      val createTenantTable = config.createTenantUserMetadataTable.replace("@tenantTable", tenantUserMetadataTable)
+      checkAndCreateTable(tenantUserMetadataTable, createTenantTable)
+
+      val createOrgRolesTable = config.createOrgRolesTable.replace("@orgRolesTable", orgRolesTable)
+      checkAndCreateTable(orgRolesTable, createOrgRolesTable)
+
       if (eventType == "update" || eventType == "bulk-update" || eventType == "create" || eventType == "bulk-create") {
         /** checking existance of filter data for tenant user table */
         val userDashboardFiltersList = ListBuffer[String]()
@@ -163,7 +170,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
               resultList += checkIfValueExists(tenantUserMetadataTable.replace("\"", ""), "attribute_value", userRoleName)
               println(s"Upserting for attribute_code: Platform Role, attribute_value: $userRoleName, attribute_label: $userRoleId")
               processUserMetadata(tenantUserMetadataTable, userId, "Platform Role", userRoleName, userRoleId)
-
+              processOrgRolesTable(orgRolesTable, userId, organizationsId.toInt, organizationsName, userRoleId.toInt, userRoleName)
               if (subrolePairs.nonEmpty) {
                 subrolePairs.foreach { case (professionalSubrolesName, professionalSubrolesId) =>
                   resultList += checkIfValueExists(tenantUserMetadataTable.replace("\"", ""), "attribute_value", professionalSubrolesName)
@@ -230,6 +237,21 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
       val params = Seq(userId, attributeCode, attributeValue, attributeLabel)
       postgresUtil.executePreparedUpdate(upsertQuery, params, tenantUserMetadataTable, userId.toString)
       println(s"Upserted [$attributeCode] for user [$userId] into [$tenantUserMetadataTable]")
+    }
+
+    def processOrgRolesTable(orgRolesTable: String, userId: Int, org_id: Int, org_name: String, role_id: Int, role_name: String): Unit = {
+      println(s"processing org role table")
+      val upsertQuery =
+        s"""INSERT INTO $orgRolesTable (id, user_id, org_id, org_name, role_id, role_name)
+           |VALUES (DEFAULT, ?, ?, ?, ?, ?)
+           |ON CONFLICT (user_id, org_id, role_id) DO UPDATE SET
+           |  org_name = EXCLUDED.org_name,
+           |  role_name = EXCLUDED.role_name
+        """.stripMargin
+
+      val params = Seq(userId, org_id, org_name, role_id, role_name)
+      postgresUtil.executePreparedUpdate(upsertQuery, params, orgRolesTable, userId.toString)
+      println(s"Upserted org roles for user [$userId] into [$orgRolesTable]")
     }
 
     def processUsers(tenantUserTable: String, userId: Int): Unit = {
