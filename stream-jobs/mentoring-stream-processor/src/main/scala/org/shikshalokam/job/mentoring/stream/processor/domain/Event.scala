@@ -1,10 +1,12 @@
 package org.shikshalokam.job.mentoring.stream.processor.domain
 
 import org.shikshalokam.job.domain.reader.JobRequest
+
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
 import java.time.{Instant, OffsetDateTime}
+import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
 class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long)
@@ -52,11 +54,11 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long)
 
   def completedAt: Timestamp = parseTimestamp(extractValue[Any]("completed_at").orNull)
 
-  def recommendedFor: String = extractValue[Seq[String]]("recommended_for").map(_.mkString(",")).getOrElse("")
+  def recommendedFor: String = extractCollectionAsCsv("recommended_for")
 
-  def categories: String = extractValue[Seq[String]]("categories").map(_.mkString(",")).getOrElse("")
+  def categories: String = extractCollectionAsCsv("categories")
 
-  def medium: String = extractValue[Seq[String]]("medium").map(_.mkString(",")).getOrElse("")
+  def medium: String = extractCollectionAsCsv("medium")
 
   def attId: Int = extractValue[Int]("att_id").getOrElse(-1)
 
@@ -106,6 +108,17 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long)
       .map(_.asInstanceOf[T])
   }
 
+  private def extractCollectionAsCsv(key: String): String = {
+    extractValue[AnyRef](key)
+      .flatMap {
+        case seq: Seq[_] => Some(seq.collect { case s: String => s })
+        case coll: java.util.Collection[_] => Some(coll.asScala.collect { case s: String => s })
+        case _ => None
+      }
+      .map(_.mkString(","))
+      .getOrElse("")
+  }
+
   private def parseTimestamp(value: Any): Timestamp = value match {
     case null => null
     case ts: Timestamp => ts
@@ -127,5 +140,4 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long)
       parsers.view.flatMap(parser => parser(str)).headOption.orNull
     case _ => null
   }
-
 }

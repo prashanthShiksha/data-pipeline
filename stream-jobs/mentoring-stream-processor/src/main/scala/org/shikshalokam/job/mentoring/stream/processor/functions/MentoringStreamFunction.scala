@@ -198,7 +198,7 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
 
           val sessionAttendanceParams = Seq(attId, atSessionId, menteeId.toInt, joinedAt, leftAt, isFeedbackSkipped, sessionType, createdAt, updatedAt, deletedAt)
           postgresUtil.executePreparedUpdate(insertSessionAttendanceQuery, sessionAttendanceParams, tenantSessionAttendanceTable, attId.toString)
-        } else if (entity == "org_mentor_rating") {
+        } else if (entity == "rating") {
           val createOrgMentorRatingTable = config.createOrgMentorRatingTable.replace("@orgMentorRating", tenantOrgMentorRatingTable)
           checkAndCreateTable(tenantOrgMentorRatingTable, createOrgMentorRatingTable)
 
