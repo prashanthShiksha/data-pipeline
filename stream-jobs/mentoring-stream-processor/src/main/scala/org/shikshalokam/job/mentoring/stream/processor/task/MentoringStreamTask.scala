@@ -43,12 +43,10 @@ object MentoringStreamTask {
   def main(args: Array[String]): Unit = {
     println("Starting up the Mentoring Stream Job")
     val parameterTool = ParameterTool.fromArgs(args)
-
     val configFilePath = Option(parameterTool.get("config.file.path"))
     val baseConfig = configFilePath
       .map(path => ConfigFactory.parseFile(new File(path)))
       .getOrElse(ConfigFactory.load("mentoring-stream.conf"))
-
     val config = ConfigFactory.systemEnvironment().withFallback(baseConfig).resolve()
     val mentoringStreamConfig = new MentoringStreamConfig(config)
     val kafkaUtil = new FlinkKafkaConnector(mentoringStreamConfig)

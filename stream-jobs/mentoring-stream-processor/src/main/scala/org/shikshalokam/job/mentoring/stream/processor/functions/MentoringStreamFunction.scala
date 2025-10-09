@@ -61,7 +61,7 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
     val sessionId = event.sessionId
     val mentorId = event.mentorId
     val sessionName = event.sessionName
-    val sessionDes = event.sessionDes
+    val sessionDesc = event.sessionDesc
     val sessionType = event.sessionType
     val sessionStatus = event.sessionStatus
     val platform = event.platform
@@ -71,14 +71,14 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
     val categories = event.categories
     val medium = event.medium
 
-    val attId = event.attId
-    val atSessionId = event.atSessionId
+    val attendanceId = event.attendanceId
+    val attendanceSessionId = event.attendanceSessionId
     val menteeId = event.menteeId
     val joinedAt = event.joinedAt
     val leftAt = event.leftAt
     val isFeedbackSkipped = event.isFeedbackSkipped
 
-    val connId = event.connId
+    val connectionId = event.connectionId
     val userId = event.userId
     val friendId = event.friendId
     val orgId = event.orgId
@@ -111,7 +111,7 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
     println(s"sessionId: $sessionId")
     println(s"mentorId: $mentorId")
     println(s"sessionName: $sessionName")
-    println(s"description: $sessionDes")
+    println(s"description: $sessionDesc")
     println(s"sessionType: $sessionType")
     println(s"sessionStatus: $sessionStatus")
     println(s"platform: $platform")
@@ -121,14 +121,14 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
     println(s"categories: $categories")
     println(s"medium: $medium")
 
-    println(s"attId: $attId")
-    println(s"atSessionId: $atSessionId")
+    println(s"attendanceId: $attendanceId")
+    println(s"attendanceSessionId: $attendanceSessionId")
     println(s"menteeId: $menteeId")
     println(s"joinedAt: $joinedAt")
     println(s"leftAt: $leftAt")
     println(s"isFeedbackSkipped: $isFeedbackSkipped")
 
-    println(s"connId: $connId")
+    println(s"connectionId: $connectionId")
     println(s"userId: $userId")
     println(s"friendId: $friendId")
     println(s"orgId: $orgId")
@@ -180,7 +180,7 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
                |  created_by = EXCLUDED.created_by, updated_by = EXCLUDED.updated_by
                |""".stripMargin
 
-          val sessionParams = Seq(sessionId, safeMentorId, sessionName, sessionDes, sessionType, sessionStatus, safeOrgId, orgCode, orgName, platform, startedAt, completedAt, createdAt, updatedAt, deletedAt, recommendedFor, categories, medium, safeCreatedBy, safeUpdatedBy)
+          val sessionParams = Seq(sessionId, safeMentorId, sessionName, sessionDesc, sessionType, sessionStatus, safeOrgId, orgCode, orgName, platform, startedAt, completedAt, createdAt, updatedAt, deletedAt, recommendedFor, categories, medium, safeCreatedBy, safeUpdatedBy)
           postgresUtil.executePreparedUpdate(insertSessionQuery, sessionParams, tenantSessionTable, sessionId.toString)
         } else if (entity == "attendance") {
           val createSessionAttendanceTable = config.createTenantSessionAttendanceTable.replace("@sessionAttendance", tenantSessionAttendanceTable)
@@ -196,8 +196,8 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
                |  created_at = EXCLUDED.created_at, updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at
                |""".stripMargin
 
-          val sessionAttendanceParams = Seq(attId, atSessionId, menteeId.toInt, joinedAt, leftAt, isFeedbackSkipped, sessionType, createdAt, updatedAt, deletedAt)
-          postgresUtil.executePreparedUpdate(insertSessionAttendanceQuery, sessionAttendanceParams, tenantSessionAttendanceTable, attId.toString)
+          val sessionAttendanceParams = Seq(attendanceId, attendanceSessionId, menteeId.toInt, joinedAt, leftAt, isFeedbackSkipped, sessionType, createdAt, updatedAt, deletedAt)
+          postgresUtil.executePreparedUpdate(insertSessionAttendanceQuery, sessionAttendanceParams, tenantSessionAttendanceTable, attendanceId.toString)
         } else if (entity == "rating") {
           val createOrgMentorRatingTable = config.createOrgMentorRatingTable.replace("@orgMentorRating", tenantOrgMentorRatingTable)
           checkAndCreateTable(tenantOrgMentorRatingTable, createOrgMentorRatingTable)
@@ -224,8 +224,8 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
                |  created_at = EXCLUDED.created_at, updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at
                |""".stripMargin
 
-          val connectionsParams = Seq(connId, userId.toInt, friendId.toInt, sessionStatus, orgId.toInt, createdBy.toInt, updatedBy.toInt, createdAt, updatedAt, deletedAt)
-          postgresUtil.executePreparedUpdate(insertConnectionsQuery, connectionsParams, tenantConnectionsTable, connId.toString)
+          val connectionsParams = Seq(connectionId, userId.toInt, friendId.toInt, sessionStatus, orgId.toInt, createdBy.toInt, updatedBy.toInt, createdAt, updatedAt, deletedAt)
+          postgresUtil.executePreparedUpdate(insertConnectionsQuery, connectionsParams, tenantConnectionsTable, connectionId.toString)
         }
       } else if (eventType == "delete") {
         println(s"Processing delete event for entity: $entity")
@@ -238,8 +238,8 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
                |SET deleted_at = ?
                |WHERE conn_id = ?
          """.stripMargin
-          println(s"Executing delete connections query: $deleteConnectionsQuery with deletedAt: $deletedAt and connId: $connId")
-          postgresUtil.executePreparedUpdate(deleteConnectionsQuery, Seq(deletedAt, connId), tenantConnectionsTable, connId.toString)
+          println(s"Executing delete connections query: $deleteConnectionsQuery with deletedAt: $deletedAt and connId: $connectionId")
+          postgresUtil.executePreparedUpdate(deleteConnectionsQuery, Seq(deletedAt, connectionId), tenantConnectionsTable, connectionId.toString)
         }
       }
     } else {

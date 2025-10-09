@@ -44,7 +44,7 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long)
 
   def sessionName: String = extractValue[String]("name").orNull
 
-  def sessionDes: String = extractValue[String]("description").orNull
+  def sessionDesc: String = extractValue[String]("description").orNull
 
   def sessionType: String = extractValue[String]("type").orNull
 
@@ -60,9 +60,9 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long)
 
   def medium: String = extractCollectionAsCsv("medium")
 
-  def attId: Int = extractValue[Int]("att_id").getOrElse(-1)
+  def attendanceId: Int = extractValue[Int]("att_id").getOrElse(-1)
 
-  def atSessionId: Int = extractValue[Int]("session_id").getOrElse(-1)
+  def attendanceSessionId: Int = extractValue[Int]("session_id").getOrElse(-1)
 
   def menteeId: String = extractValue[String]("mentee_id").orNull
 
@@ -72,7 +72,7 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long)
 
   def isFeedbackSkipped: Boolean = extractValue[Boolean]("is_feedback_skipped").getOrElse(false)
 
-  def connId: Int = extractValue[Int]("conn_id").getOrElse(-1)
+  def connectionId: Int = extractValue[Int]("conn_id").getOrElse(-1)
 
   def userId: String = extractValue[String]("user_id").orNull
 
