@@ -101,7 +101,7 @@ class MentoringStreamConfig(override val config: Config) extends BaseJobConfig(c
     s"""
        CREATE TABLE IF NOT EXISTS @sessionAttendance (
        |    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-       |    att_id INT UNIQUE,
+       |    attendance_id INT UNIQUE,
        |    session_id INT,
        |    mentee_id INT,
        |    joined_at TIMESTAMPTZ,
@@ -119,7 +119,7 @@ class MentoringStreamConfig(override val config: Config) extends BaseJobConfig(c
     s"""
        |CREATE TABLE IF NOT EXISTS @connectionsTable (
        |    id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-       |    conn_id INT UNIQUE,
+       |    connection_id INT UNIQUE,
        |    user_id INT,
        |    friend_id INT,
        |    status TEXT,

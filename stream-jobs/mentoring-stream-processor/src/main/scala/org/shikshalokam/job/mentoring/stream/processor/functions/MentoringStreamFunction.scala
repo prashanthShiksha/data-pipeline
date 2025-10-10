@@ -8,12 +8,11 @@ import org.shikshalokam.job.mentoring.stream.processor.task.MentoringStreamConfi
 import org.shikshalokam.job.util.{PostgresUtil, ScalaJsonUtil}
 import org.shikshalokam.job.{BaseProcessFunction, Metrics}
 import org.slf4j.LoggerFactory
-import play.api.libs.json._
 
 import java.time.format.DateTimeFormatter
 import java.time.{Instant, ZoneId}
 import java.util
-import scala.collection.immutable.{Map, _}
+import scala.collection.immutable._
 
 class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTypeInfo: TypeInformation[Event], @transient var postgresUtil: PostgresUtil = null)
   extends BaseProcessFunction[Event, Event](config) {
@@ -41,14 +40,12 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
 
   override def processElement(event: Event, context: ProcessFunction[Event, Event]#Context, metrics: Metrics): Unit = {
 
-    println(s"***************** Start of Processing Entity = ${event.entity} *****************")
+    println(s"***************** Start of Processing Entity = ${event.entity} of Type = ${event.eventType} *****************")
 
-    val id = event.id
     val tenantCode = event.tenantCode
     val eventType = event.eventType
     val entity = event.entity
     val name = event.name
-    val username = event.username
     val status = event.status
     val createdBy = event.createdBy
     val updatedBy = event.updatedBy
@@ -93,12 +90,10 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
     val tenantConnectionsTable: String = s""""${tenantCode}_connections""""
     val tenantOrgMentorRatingTable: String = s""""${tenantCode}_org_mentor_rating""""
 
-    println(s"Id: $id")
     println(s"tenantCode: $tenantCode")
     println(s"eventType: $eventType")
     println(s"entity: $entity")
     println(s"name: $name")
-    println(s"username: $username")
     println(s"status: $status")
     println(s"createdBy: $createdBy")
     println(s"updatedBy: $updatedBy")
@@ -188,9 +183,9 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
 
           val insertSessionAttendanceQuery =
             s"""
-               |INSERT INTO $tenantSessionAttendanceTable (id, att_id, session_id, mentee_id, joined_at, left_at, is_feedback_skipped, type, created_at, updated_at, deleted_at)
+               |INSERT INTO $tenantSessionAttendanceTable (id, attendance_id, session_id, mentee_id, joined_at, left_at, is_feedback_skipped, type, created_at, updated_at, deleted_at)
                |VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-               |ON CONFLICT (att_id) DO UPDATE SET
+               |ON CONFLICT (attendance_id) DO UPDATE SET
                |  session_id = EXCLUDED.session_id, mentee_id = EXCLUDED.mentee_id, joined_at = EXCLUDED.joined_at,
                |  left_at = EXCLUDED.left_at, is_feedback_skipped = EXCLUDED.is_feedback_skipped, type = EXCLUDED.type,
                |  created_at = EXCLUDED.created_at, updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at
@@ -216,10 +211,10 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
 
           val insertConnectionsQuery =
             s"""
-               |INSERT INTO $tenantConnectionsTable (id, conn_id, user_id, friend_id, status, org_id, created_by, updated_by, created_at, updated_at, deleted_at)
+               |INSERT INTO $tenantConnectionsTable (id, connection_id, user_id, friend_id, status, org_id, created_by, updated_by, created_at, updated_at, deleted_at)
                |VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                |ON CONFLICT (user_id, friend_id) DO UPDATE SET
-               |  conn_id = EXCLUDED.conn_id, status = EXCLUDED.status,
+               |  connection_id = EXCLUDED.connection_id, status = EXCLUDED.status,
                |  org_id = EXCLUDED.org_id, created_by = EXCLUDED.created_by, updated_by = EXCLUDED.updated_by,
                |  created_at = EXCLUDED.created_at, updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at
                |""".stripMargin
@@ -235,27 +230,30 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
           val deleteConnectionsQuery =
             s"""
                |UPDATE $tenantConnectionsTable
-               |SET deleted_at = ?
-               |WHERE conn_id = ?
+               |SET
+               |deleted_at = ?,
+               |status = 'DELETED',
+               |deleted = ?
+               |WHERE connection_id = ?
          """.stripMargin
           println(s"Executing delete connections query: $deleteConnectionsQuery with deletedAt: $deletedAt and connId: $connectionId")
-          postgresUtil.executePreparedUpdate(deleteConnectionsQuery, Seq(deletedAt, connectionId), tenantConnectionsTable, connectionId.toString)
+          postgresUtil.executePreparedUpdate(deleteConnectionsQuery, Seq(deletedAt, connectionId, isDeleted), tenantConnectionsTable, connectionId.toString)
         }
       }
     } else {
       println("Tenant code is empty, skipping processing.")
     }
 
-
     def deleteSessionAndAttendance(tenantSessionTable: String, tenantSessionAttendanceTable: String, sessionId: Int, deletedAt: java.sql.Timestamp): Unit = {
       try {
         val deleteSessionQuery =
           s"""
              |UPDATE $tenantSessionTable
-             |SET deleted_at = ?
+             |SET
+             |deleted_at = ?,
+             |status = 'DELETED'
              |WHERE session_id = ?
           """.stripMargin
-        println(s"Executing delete session query: $deleteSessionQuery with deletedAt: $deletedAt and sessionId: $sessionId")
         postgresUtil.executePreparedUpdate(deleteSessionQuery, Seq(deletedAt, sessionId), tenantSessionTable, sessionId.toString)
       } catch {
         case ex: Exception =>
@@ -265,10 +263,11 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
         val deleteAttendanceQuery =
           s"""
              |UPDATE $tenantSessionAttendanceTable
-             |SET deleted_at = ?
+             |SET
+             |deleted_at = ?,
+             |status = 'DELETED'
              |WHERE session_id = ?
           """.stripMargin
-        println(s"Executing delete attendance query: $deleteAttendanceQuery with deletedAt: $deletedAt and sessionId: $sessionId")
         postgresUtil.executePreparedUpdate(deleteAttendanceQuery, Seq(deletedAt, sessionId), tenantSessionAttendanceTable, sessionId.toString)
       } catch {
         case ex: Exception =>
@@ -295,15 +294,14 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
       pushMentoringDashboardEvents(dashboardData, context, event)
     }
 
-    println(s"***************** Completed Processing Entity = ${event.entity} *****************")
+    println(s"***************** Completed Processing Entity = ${event.entity} of Type = ${event.eventType}  *****************")
 
     def checkAndInsert(entityType: String, entityName: String, entityId: String, dashboardData: java.util.HashMap[String, String]): Unit = {
       if (tenantCode.isEmpty || orgId == null) {
-        println(s"Tenant code is empty, skipping insertion.")
+        println(s"Tenant code or Org Id is empty, skipping insertion.")
         return
       }
       val query = s"SELECT EXISTS (SELECT 1 FROM ${config.dashboardMetadata} WHERE entity_type = '$entityType' AND entity_id = '$entityId') AS is_present"
-      println(s"Executing query to check existence: $query")
       val result = postgresUtil.fetchData(query)
 
       result.foreach { row =>
@@ -313,7 +311,6 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
           case _ =>
             if (entityType == "Mentoring") {
               val insertQuery = s"INSERT INTO ${config.dashboardMetadata} (entity_type, entity_name, entity_id) VALUES ('$entityType', '$entityName', '$entityId')"
-              println(s"Executing insert query: $insertQuery")
               val affectedRows = postgresUtil.insertData(insertQuery)
               println(s"Inserted mentoringDashboard details. Affected rows: $affectedRows")
               dashboardData.put("tenantCode", event.tenantCode)

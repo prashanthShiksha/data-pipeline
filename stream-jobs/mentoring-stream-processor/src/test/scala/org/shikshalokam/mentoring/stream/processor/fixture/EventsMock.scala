@@ -8,9 +8,9 @@ object EventsMock {
 
   val SESSION_DELETE: String = """{"eventType":"delete","entity":"session","tenant_code":"shikshagrahanew","session_id":181,"deleted":true,"deleted_at":"2025-09-06T08:00:00Z"}"""
 
-  val SESSION_ATTENDANCE_CREATE: String = """{"eventType":"create","entity":"attendance","att_id":39,"tenant_code":"shikshagrahanew","session_id":181,"mentee_id":"224","joined_at":"2025-05-22 13:12:35+05:30","left_at":null,"is_feedback_skipped":false,"type":"ENROLLED","created_at":"2025-05-22 13:12:07.676000+05:30","updated_at":"2025-08-18 15:28:37.789613+05:30","deleted_at":null,"deleted":false}"""
+  val SESSION_ATTENDANCE_CREATE: String = """{"eventType":"create","entity":"attendance","attendance_id":39,"tenant_code":"shikshagrahanew","session_id":181,"mentee_id":"224","joined_at":"2025-05-22 13:12:35+05:30","left_at":null,"is_feedback_skipped":false,"type":"ENROLLED","created_at":"2025-05-22 13:12:07.676000+05:30","updated_at":"2025-08-18 15:28:37.789613+05:30","deleted_at":null,"deleted":false}"""
 
-  val SESSION_ATTENDANCE_UPDATE: String = """{"eventType":"update","entity":"attendance","att_id":39,"tenant_code":"shikshagrahanew","oldValues":{"session_id":181,"mentee_id":"224","joined_at":"2025-05-22 13:12:35+05:30","left_at":null,"is_feedback_skipped":false,"type":"ENROLLED","created_at":"2025-05-22 13:12:07.676000+05:30","deleted_at":null,"deleted":false},"newValues":{"left_at":"2025-09-05T12:00:00Z"},"updated_at":"2025-09-05T12:00:00Z"}"""
+  val SESSION_ATTENDANCE_UPDATE: String = """{"eventType":"update","entity":"attendance","attendance_id":39,"tenant_code":"shikshagrahanew","oldValues":{"session_id":181,"mentee_id":"224","joined_at":"2025-05-22 13:12:35+05:30","left_at":null,"is_feedback_skipped":false,"type":"ENROLLED","created_at":"2025-05-22 13:12:07.676000+05:30","deleted_at":null,"deleted":false},"newValues":{"left_at":"2025-09-05T12:00:00Z"},"updated_at":"2025-09-05T12:00:00Z"}"""
 
   val SESSION_ATTENDANCE_DELETE: String = """{"eventType":"delete","entity":"attendance","tenant_code":"shikshagrahanew","session_id":181,"deleted":true,"deleted_at":"2025-09-06T08:00:00Z"}"""
 
@@ -18,9 +18,9 @@ object EventsMock {
 
   val ORG_MENTOR_RATING_UPDATE: String = """{"eventType":"update","entity":"rating","tenant_code":"shikshagrahanew","oldValues":{"org_id":"8","org_name":"Bengaluru","mentor_id":"1838","rating":4,"deleted":false},"newValues":{"rating":5},"rating_updated_at":"2025-09-06T09:00:00Z"}"""
 
-  val CONNECTIONS_CREATE: String = """{"eventType":"create","entity":"connections","conn_id":30,"tenant_code":"shikshagrahanew","user_id":"1701","friend_id":"1698","status":"REQUESTED","org_id":"39","created_by":"1701","updated_by":"1698","created_at":"2025-09-03 09:38:37.916000+05:30","updated_at":"2025-09-03 09:38:37.916000+05:30","deleted_at":null,"deleted":false}"""
+  val CONNECTIONS_CREATE: String = """{"eventType":"create","entity":"connections","connection_id":30,"tenant_code":"shikshagrahanew","user_id":"1701","friend_id":"1698","status":"REQUESTED","org_id":"39","created_by":"1701","updated_by":"1698","created_at":"2025-09-03 09:38:37.916000+05:30","updated_at":"2025-09-03 09:38:37.916000+05:30","deleted_at":null,"deleted":false}"""
 
-  val CONNECTIONS_UPDATE: String = """{"eventType":"update","entity":"connections","conn_id":30,"tenant_code":"shikshagrahanew","oldValues":{"user_id":"1701","friend_id":"1698","status":"REQUESTED","org_id":"39","created_by":"1701","created_at":"2025-09-03 09:38:37.916000+05:30","deleted_at":null,"deleted":false},"newValues":{"status":"ACCEPTED"},"updated_by":"1698","updated_at":"2025-09-05T11:00:00Z"}"""
+  val CONNECTIONS_UPDATE: String = """{"eventType":"update","entity":"connections","connection_id":30,"tenant_code":"shikshagrahanew","oldValues":{"user_id":"1701","friend_id":"1698","status":"REQUESTED","org_id":"39","created_by":"1701","created_at":"2025-09-03 09:38:37.916000+05:30","deleted_at":null,"deleted":false},"newValues":{"status":"ACCEPTED"},"updated_by":"1698","updated_at":"2025-09-05T11:00:00Z"}"""
 
-  val CONNECTIONS_DELETE: String = """{"eventType":"delete","entity":"connections","tenant_code":"shikshagrahanew","conn_id":30,"deleted":true,"deleted_at":"2025-09-06T08:30:00Z"}"""
+  val CONNECTIONS_DELETE: String = """{"eventType":"delete","entity":"connections","tenant_code":"shikshagrahanew","connection_id":30,"deleted":true,"deleted_at":"2025-09-06T08:30:00Z"}"""
 }

@@ -18,15 +18,11 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long)
 
   def name: String = readOrDefault[String]("name", null)
 
-  def username: String = readOrDefault[String]("username", null)
-
   def status: String = readOrDefault[String]("status", null)
 
   def createdBy: String = extractValue[String]("created_by").orNull
 
   def updatedBy: String = readOrDefault[String]("updated_by", null)
-
-  def id: Int = extractValue[Int]("id").getOrElse(-1)
 
   def tenantCode: String = extractValue[String]("tenant_code").orNull
 
@@ -60,7 +56,7 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long)
 
   def medium: String = extractCollectionAsCsv("medium")
 
-  def attendanceId: Int = extractValue[Int]("att_id").getOrElse(-1)
+  def attendanceId: Int = extractValue[Int]("attendance_id").getOrElse(-1)
 
   def attendanceSessionId: Int = extractValue[Int]("session_id").getOrElse(-1)
 
@@ -72,7 +68,7 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long)
 
   def isFeedbackSkipped: Boolean = extractValue[Boolean]("is_feedback_skipped").getOrElse(false)
 
-  def connectionId: Int = extractValue[Int]("conn_id").getOrElse(-1)
+  def connectionId: Int = extractValue[Int]("connection_id").getOrElse(-1)
 
   def userId: String = extractValue[String]("user_id").orNull
 
@@ -89,10 +85,6 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long)
   def rating: Int = extractValue[Int]("rating").getOrElse(-1)
 
   def ratingUpdatedAt: Timestamp = parseTimestamp(extractValue[Any]("rating_updated_at").orNull)
-
-  def userIdRoles: Int = extractValue[Int]("userId").getOrElse(-1)
-
-  def organizations: Seq[Map[String, Any]] = extractValue[Seq[Map[String, Any]]]("organizations").getOrElse(Seq.empty)
 
   private val isUpdateEvent: Boolean = eventType == "update" || eventType == "bulk-update"
 
