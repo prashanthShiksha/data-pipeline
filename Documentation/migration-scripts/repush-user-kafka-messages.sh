@@ -211,7 +211,7 @@ while IFS=$'\t' read -r id name username tenant created updated status meta_json
       status: $status,
       deleted: $deleted,
       id: ($id | tonumber),
-      created_by: $created_by,
+      created_by: ($created_by | tonumber),
       organizations: $organizations
     } + $final')
 

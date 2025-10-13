@@ -204,6 +204,47 @@ for table in "${question_ids[@]}"; do
   fi
 done
 
+# === Alter all Observation Status Tables to include report_type ===
+log ""
+log ""
+log "📌 Altering Observation Status Tables — Adding column if not exists entity_id, entity_name, entity_external_id"
+for table in "${status_ids[@]}"; do
+  log "🔧 Altering table: ${table}_status"
+
+  # Add other columns if not exists
+  if psql -h "$PGHOST" -p "$PGPORT" -d "$PGDBNAME" -U "$PGUSER" -c "
+    ALTER TABLE \"${table}_status\"
+      ADD COLUMN IF NOT EXISTS entity_id TEXT,
+      ADD COLUMN IF NOT EXISTS entity_name TEXT,
+      ADD COLUMN IF NOT EXISTS entity_external_id TEXT;
+  "; then
+    log "✅ Columns added or already exist in ${table}_status"
+  else
+    log "❌ Failed to add columns to ${table}_status"
+    continue
+  fi
+done
+
+# === Alter all Observation Domain Tables to include report_type ===
+log ""
+log ""
+log "📌 Altering Observation Domain Tables — Adding column if not exists entity_id, entity_name, entity_external_id"
+for table in "${domain_ids[@]}"; do
+  log "🔧 Altering table: ${table}_domain"
+
+  # Add other columns if not exists
+  if psql -h "$PGHOST" -p "$PGPORT" -d "$PGDBNAME" -U "$PGUSER" -c "
+    ALTER TABLE \"${table}_domain\"
+      ADD COLUMN IF NOT EXISTS entity_id TEXT,
+      ADD COLUMN IF NOT EXISTS entity_name TEXT,
+      ADD COLUMN IF NOT EXISTS entity_external_id TEXT;
+  "; then
+    log "✅ Columns added or already exist in ${table}_domain"
+  else
+    log "❌ Failed to add columns to ${table}_domain"
+    continue
+  fi
+done
 
 # Fetch entity_ids
 entity_ids=$(psql -h "$PGHOST" -p "$PGPORT" -d "$PGDBNAME" -U "$PGUSER" -t -A -c \

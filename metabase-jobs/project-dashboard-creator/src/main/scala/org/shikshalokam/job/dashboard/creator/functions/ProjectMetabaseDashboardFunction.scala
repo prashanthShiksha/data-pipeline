@@ -74,7 +74,7 @@ class ProjectMetabaseDashboardFunction(config: ProjectMetabaseDashboardConfig)(i
     val orgName = postgresUtil.fetchData(s"""SELECT org_name FROM $projects WHERE solution_id = '$targetedSolutionId' LIMIT 1 """).collectFirst { case map: Map[_, _] => map.getOrElse("org_name", "").toString }.getOrElse("")
     val stateName = postgresUtil.fetchData(s"""SELECT entity_name FROM $metaDataTable WHERE entity_id = '$targetedStateId'""").collectFirst { case map: Map[_, _] => map.getOrElse("entity_name", "").toString }.getOrElse("")
     val districtName = postgresUtil.fetchData(s"""SELECT entity_name FROM $metaDataTable WHERE entity_id = '$targetedDistrictId'""").collectFirst { case map: Map[_, _] => map.getOrElse("entity_name", "").toString }.getOrElse("")
-    val tenantId = postgresUtil.fetchData(s"""SELECT tenant_id FROM $projects WHERE solution_id = '$targetedSolutionId' LIMIT 1 """).collectFirst { case map: Map[_, _] => map.getOrElse("tenant_id", "").toString }.getOrElse("")
+    val tenantId = postgresUtil.fetchData(s"""SELECT tenant_id FROM $projects WHERE solution_id = '$targetedSolutionId' AND tenant_id IS NOT NULL AND TRIM(tenant_id) <> '' LIMIT 1 """).collectFirst { case map: Map[_, _] => map.getOrElse("tenant_id", "").toString }.getOrElse("")
     val combinedQuery = s"SELECT program_description, program_external_id, external_id, description FROM $solutions WHERE solution_id = '$targetedSolutionId' LIMIT 1"
     val resultMap = postgresUtil.fetchData(combinedQuery).collectFirst { case map: Map[_, _] => map }.getOrElse(Map.empty[String, Any])
     val programExternalId = resultMap.get("program_external_id").map(_.toString).getOrElse("")
@@ -83,7 +83,7 @@ class ProjectMetabaseDashboardFunction(config: ProjectMetabaseDashboardConfig)(i
     val solutionDescription = resultMap.get("description").map(_.toString).getOrElse("")
     val stateIdForDistrictId: String = postgresUtil.fetchData(s"""SELECT state_id FROM $projects WHERE district_id = '$targetedDistrictId' LIMIT 1 """).collectFirst { case map: Map[_, _] => map.getOrElse("state_id", "").toString }.getOrElse("")
     val stateNameForDistrictId: String = postgresUtil.fetchData(s"""SELECT entity_name FROM $metaDataTable WHERE entity_id = '$stateIdForDistrictId'""").collectFirst { case map: Map[_, _] => map.getOrElse("entity_name", "").toString }.getOrElse("")
-    val tenantIdForDistrictId: String = postgresUtil.fetchData(s"""SELECT tenant_id FROM $projects WHERE state_id = '$stateIdForDistrictId' LIMIT 1 """).collectFirst { case map: Map[_, _] => map.getOrElse("tenant_id", "").toString }.getOrElse("")
+    val tenantIdForDistrictId: String = postgresUtil.fetchData(s"""SELECT tenant_id FROM $projects WHERE state_id = '$stateIdForDistrictId' AND tenant_id IS NOT NULL AND TRIM(tenant_id) <> '' LIMIT 1 """).collectFirst { case map: Map[_, _] => map.getOrElse("tenant_id", "").toString }.getOrElse("")
     val storedTableIds = TrieMap.empty[(Int, String), Int]
     val storedColumnIds = TrieMap.empty[(Int, String), Int]
 
