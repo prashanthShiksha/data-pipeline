@@ -230,11 +230,11 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
           val deleteConnectionsQuery =
             s"""
                |UPDATE $tenantConnectionsTable
-               |SET deleted_at = ?, status = 'DELETED', deleted = ?
+               |SET deleted_at = ?, status = 'DELETED'
                |WHERE connection_id = ?
          """.stripMargin
           println(s"Executing delete connections query: $deleteConnectionsQuery with deletedAt: $deletedAt and connId: $connectionId")
-          postgresUtil.executePreparedUpdate(deleteConnectionsQuery, Seq(deletedAt, isDeleted, connectionId), tenantConnectionsTable, connectionId.toString)
+          postgresUtil.executePreparedUpdate(deleteConnectionsQuery, Seq(deletedAt, connectionId), tenantConnectionsTable, connectionId.toString)
         }
       }
     } else {
