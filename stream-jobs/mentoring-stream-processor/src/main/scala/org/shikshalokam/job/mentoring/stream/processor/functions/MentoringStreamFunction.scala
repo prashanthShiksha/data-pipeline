@@ -233,7 +233,6 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
                |SET deleted_at = ?, status = 'DELETED'
                |WHERE connection_id = ?
          """.stripMargin
-          println(s"Executing delete connections query: $deleteConnectionsQuery with deletedAt: $deletedAt and connId: $connectionId")
           postgresUtil.executePreparedUpdate(deleteConnectionsQuery, Seq(deletedAt, connectionId), tenantConnectionsTable, connectionId.toString)
         }
       }
