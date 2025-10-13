@@ -214,7 +214,7 @@ def process_attendance():
         event = {
             "eventType": "create",
             "entity": "attendance",
-            "att_id": att_id,
+            "attendance_id": att_id,
             "tenant_code": tenant_code,
             "session_id": session_id,
             "mentee_id": mentee_id,
@@ -269,7 +269,7 @@ def process_connections():
         event = {
             "eventType": "create",
             "entity": "connections",
-            "conn_id": conn_id,
+            "connection_id": conn_id,
             "tenant_code": tenant_code,
             "user_id": user_id,
             "friend_id": friend_id,
@@ -325,7 +325,7 @@ def process_connection_requests():
             event = {
                 "eventType": "create",
                 "entity": "connections",
-                "conn_id": conn_id,
+                "connection_id": conn_id,
                 "tenant_code": tenant_code,
                 "user_id": user_id,
                 "friend_id": friend_id,
