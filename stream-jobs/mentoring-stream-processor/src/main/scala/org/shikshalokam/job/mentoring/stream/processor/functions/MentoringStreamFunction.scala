@@ -231,7 +231,7 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
             s"""
                |UPDATE $tenantConnectionsTable
                |SET
-               |deleted_at = ?, created_by = NULL, updated_by = NULL, created_at = NULL, updated_at = NULL,
+               |deleted_at = ?,
                |status = 'DELETED',
                |deleted = ?
                |WHERE connection_id = ?
@@ -249,20 +249,19 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
         val deleteSessionQuery =
           s"""
              |UPDATE $tenantSessionTable
-             |SET name = NULL, description = NULL, org_name = NULL, org_code = NULL, started_at = NULL, completed_at = NULL, created_at = NULL, updated_at = NULL,
-             |  created_by = NULL, updated_by = NULL, platform = NULL, type = NULL, recommended_for = NULL, categories = NULL,
-             |  medium = NULL, status = 'DELETED', deleted_at = ?
+             |SET
+             |  status = 'DELETED', deleted_at = ?
              |WHERE session_id = ?
         """.stripMargin
         postgresUtil.executePreparedUpdate(deleteSessionQuery, Seq(deletedAt, sessionId), tenantSessionTable, sessionId.toString)
         println(s"Session $sessionId marked as deleted in table: $tenantSessionTable")
 
-        val cleanAttendanceTable = tenantSessionAttendanceTable.replaceAll("\"", "")
+        val attendanceTable = tenantSessionAttendanceTable.replaceAll("\"", "")
         val checkAttendanceTableExistsQuery =
           s"""
              |SELECT EXISTS (
              |  SELECT 1 FROM information_schema.tables
-             |  WHERE LOWER(table_name) = LOWER('$cleanAttendanceTable')
+             |  WHERE LOWER(table_name) = LOWER('$attendanceTable')
              |);
           """.stripMargin
         val attendanceTableExists = postgresUtil.executeQuery(checkAttendanceTableExistsQuery) { resultSet =>
@@ -273,7 +272,7 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
           val deleteAttendanceQuery =
             s"""
                |UPDATE $tenantSessionAttendanceTable
-               |SET joined_at = NULL, left_at = NULL, created_at = NULL, updated_at = NULL, is_feedback_skipped = NULL,
+               |SET
                |  type = 'DELETED', deleted_at = ?
                |WHERE session_id = ?
         """.stripMargin
