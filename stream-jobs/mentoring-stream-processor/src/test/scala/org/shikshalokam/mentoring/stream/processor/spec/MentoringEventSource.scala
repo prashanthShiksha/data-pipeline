@@ -15,7 +15,6 @@ class MentoringEventSource extends SourceFunction[Event] {
     //    ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.SESSION_DELETE), 0, 0))
     //    ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.SESSION_ATTENDANCE_CREATE), 0, 0))
     //    ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.SESSION_ATTENDANCE_UPDATE), 0, 0))
-    //    ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.SESSION_ATTENDANCE_DELETE), 0, 0))
     //    ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.ORG_MENTOR_RATING_CREATE), 0, 0))
     //    ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.ORG_MENTOR_RATING_UPDATE), 0, 0))
     //    ctx.collect(new Event(JSONUtil.deserialize[java.util.Map[String, Any]](EventsMock.CONNECTIONS_CREATE), 0, 0))

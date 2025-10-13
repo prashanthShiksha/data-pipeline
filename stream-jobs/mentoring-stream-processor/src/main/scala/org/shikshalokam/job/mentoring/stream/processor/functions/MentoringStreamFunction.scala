@@ -224,14 +224,14 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
         }
       } else if (eventType == "delete") {
         println(s"Processing delete event for entity: $entity")
-        if (entity == "session" || entity == "attendance") {
+        if (entity == "session") {
           deleteSessionAndAttendance(tenantSessionTable, tenantSessionAttendanceTable, sessionId, deletedAt)
         } else if (entity == "connections") {
           val deleteConnectionsQuery =
             s"""
                |UPDATE $tenantConnectionsTable
                |SET
-               |deleted_at = ?,
+               |deleted_at = ?, created_by = NULL, updated_by = NULL, created_at = NULL, updated_at = NULL,
                |status = 'DELETED',
                |deleted = ?
                |WHERE connection_id = ?
@@ -249,29 +249,44 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
         val deleteSessionQuery =
           s"""
              |UPDATE $tenantSessionTable
-             |SET
-             |deleted_at = ?,
-             |status = 'DELETED'
+             |SET name = NULL, description = NULL, org_name = NULL, org_code = NULL, started_at = NULL, completed_at = NULL, created_at = NULL, updated_at = NULL,
+             |  created_by = NULL, updated_by = NULL, platform = NULL, type = NULL, recommended_for = NULL, categories = NULL,
+             |  medium = NULL, status = 'DELETED', deleted_at = ?
              |WHERE session_id = ?
-          """.stripMargin
+        """.stripMargin
         postgresUtil.executePreparedUpdate(deleteSessionQuery, Seq(deletedAt, sessionId), tenantSessionTable, sessionId.toString)
-      } catch {
-        case ex: Exception =>
-          println(s"Error while deleting session with sessionId: $sessionId. Error: ${ex.getMessage}")
-      }
-      try {
-        val deleteAttendanceQuery =
+        println(s"Session $sessionId marked as deleted in table: $tenantSessionTable")
+
+        val cleanAttendanceTable = tenantSessionAttendanceTable.replaceAll("\"", "")
+        val checkAttendanceTableExistsQuery =
           s"""
-             |UPDATE $tenantSessionAttendanceTable
-             |SET
-             |deleted_at = ?,
-             |status = 'DELETED'
-             |WHERE session_id = ?
+             |SELECT EXISTS (
+             |  SELECT 1 FROM information_schema.tables
+             |  WHERE LOWER(table_name) = LOWER('$cleanAttendanceTable')
+             |);
           """.stripMargin
-        postgresUtil.executePreparedUpdate(deleteAttendanceQuery, Seq(deletedAt, sessionId), tenantSessionAttendanceTable, sessionId.toString)
+        val attendanceTableExists = postgresUtil.executeQuery(checkAttendanceTableExistsQuery) { resultSet =>
+          if (resultSet.next()) resultSet.getBoolean(1) else false
+        }
+
+        if (attendanceTableExists) {
+          val deleteAttendanceQuery =
+            s"""
+               |UPDATE $tenantSessionAttendanceTable
+               |SET joined_at = NULL, left_at = NULL, created_at = NULL, updated_at = NULL, is_feedback_skipped = NULL,
+               |  type = 'DELETED', deleted_at = ?
+               |WHERE session_id = ?
+        """.stripMargin
+
+          postgresUtil.executePreparedUpdate(deleteAttendanceQuery, Seq(deletedAt, sessionId), tenantSessionAttendanceTable, sessionId.toString)
+          println(s"Attendance records for session $sessionId marked as deleted in table: $tenantSessionAttendanceTable")
+        } else {
+          println(s"Table $tenantSessionAttendanceTable does not exist — skipping attendance delete.")
+        }
+
       } catch {
         case ex: Exception =>
-          println(s"Error while deleting attendance with sessionId: $sessionId. Error: ${ex.getMessage}")
+          println(s"Error while deleting sessionId $sessionId: ${ex.getMessage}")
       }
     }
 
