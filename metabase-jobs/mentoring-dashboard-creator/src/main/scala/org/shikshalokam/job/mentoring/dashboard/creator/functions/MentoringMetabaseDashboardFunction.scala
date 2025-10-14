@@ -68,6 +68,10 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
     val storedTableIds = TrieMap.empty[(Int, String), Int]
     val storedColumnIds = TrieMap.empty[(Int, String), Int]
     val tabList = List("Overview", "Compare Organizations")
+    if (databaseId < 0) {
+      logger.error(s"Metabase database '$metabaseDatabase' not found; skipping event.")
+      return
+    }
 
     if (tenantCode.nonEmpty) {
       createCollectionAndDashboardForTenant(tenantCode)
@@ -96,7 +100,8 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
     def createOverviewTabInsideTenantDashboard(parentCollectionId: Int, databaseId: Int, dashboardId: Int, tabIdMap: Map[String, Int], metaDataTable: String, reportConfig: String, metabaseDatabase: String, metabaseApiKey: String): Unit = {
       try {
         val dashboardName: String = s"Overview"
-        val createDashboardQuery = s"UPDATE $metaDataTable SET status = 'Failed',error_message = 'errorMessage'  WHERE entity_id = '${tenantCode}_tenant_admin';"
+        val safeTenantCode = tenantCode.replace("'", "''")
+        val createDashboardQuery = s"UPDATE $metaDataTable SET status = 'Failed',error_message = 'errorMessage'  WHERE entity_id = '${safeTenantCode}_tenant_admin';"
         val tabId: Int = tabIdMap.getOrElse(dashboardName, -1)
         val orgNameId: Int = getTheColumnId(databaseId, tenantOrgRolesTable, "org_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)
         val reportConfigQuery: String = s"SELECT question_type, config FROM $reportConfig WHERE dashboard_name = 'Mentoring-Reports' AND report_name = 'Tenant-Overview' AND question_type IN ('big-number', 'graph');"
@@ -105,10 +110,10 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
           tenantOrgRolesTable, Map.empty, orgId.toInt, tabId, metabaseUtil, postgresUtil)
         val questionIdsString = "[" + questionCardIdList.mkString(",") + "]"
         val parametersQuery = s"SELECT config FROM $reportConfig WHERE report_name='Tenant-Overview' AND question_type='overview-parameter'"
-        UpdateParameters.UpdateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil)
+        UpdateParameters.updateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil)
         val objectMapper = new ObjectMapper()
         val userMetadataJson = objectMapper.createArrayNode().add(objectMapper.createObjectNode().put("collectionId", parentCollectionId).put("dashboardName", dashboardName).put("dashboardId", dashboardId).put("collectionFor", "Tenant Admin").put("questionIds", questionIdsString))
-        val updateMetadataQuery = s" UPDATE $metaDataTable SET main_metadata = COALESCE(main_metadata::jsonb, '[]'::jsonb) || '$userMetadataJson'::jsonb, status = 'Success' WHERE entity_id = '${tenantCode}_tenant_admin';"
+        val updateMetadataQuery = s" UPDATE $metaDataTable SET main_metadata = COALESCE(main_metadata::jsonb, '[]'::jsonb) || '$userMetadataJson'::jsonb, status = 'Success' WHERE entity_id = '${safeTenantCode}_tenant_admin';"
         postgresUtil.insertData(updateMetadataQuery)
       }
       catch {
@@ -133,10 +138,10 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
           tenantOrgRolesTable, Map.empty, orgId.toInt, tabId, metabaseUtil, postgresUtil)
         val questionIdsString = "[" + questionCardIdList.mkString(",") + "]"
         val parametersQuery = s"SELECT config FROM $reportConfig WHERE report_name='Tenant-Compare' AND question_type='compare-parameter'"
-        UpdateParameters.UpdateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil)
+        UpdateParameters.updateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil)
         val objectMapper = new ObjectMapper()
         val userMetadataJson = objectMapper.createArrayNode().add(objectMapper.createObjectNode().put("collectionId", parentCollectionId).put("dashboardName", dashboardName).put("dashboardId", dashboardId).put("collectionFor", "Tenant Admin").put("questionIds", questionIdsString))
-        val updateMetadataQuery = s" UPDATE $metaDataTable SET main_metadata = COALESCE(main_metadata::jsonb, '[]'::jsonb) || '$userMetadataJson'::jsonb,status = 'Success'WHERE entity_id = '${tenantCode}_tenant_admin';"
+        val updateMetadataQuery = s" UPDATE $metaDataTable SET main_metadata = COALESCE(main_metadata::jsonb, '[]'::jsonb) || '$userMetadataJson'::jsonb,status = 'Success' WHERE entity_id = '${tenantCode}_tenant_admin';"
         postgresUtil.insertData(updateMetadataQuery)
       }
       catch {
@@ -168,7 +173,7 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
         val questionCardIdList = ProcessOrgConstructor.ProcessAndUpdateJsonFiles(reportConfigQuery, collectionId, databaseId, dashboardId, stateNameId, districtNameId, blockNameId, clusterNameId, schoolNameId,
           tenantUserTable, tenantSessionTable, tenantSessionAttendanceTable, tenantConnectionsTable, tenantOrgMentorRatingTable, tenantOrgRolesTable, orgId, Map.empty, metabaseUtil, postgresUtil).toList
         val parametersQuery = s"SELECT config FROM $reportConfig WHERE report_name = 'Org-Admin' AND question_type = 'org-parameters'"
-        UpdateParameters.UpdateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil)
+        UpdateParameters.updateAdminParameterFunction(metabaseUtil, parametersQuery, dashboardId, postgresUtil)
         val questionIdsString = "[" + questionCardIdList.mkString(",") + "]"
         val mainMetadataJson = new ObjectMapper().createObjectNode().put("collectionId", collectionId).put("collectionName", collectionName).put("dashboardId", dashboardId).put("dashboardName", dashboardName).put("collectionFor", "Org Admin").put("questionIds", questionIdsString)
         postgresUtil.insertData(s"UPDATE $metaDataTable SET main_metadata = '$mainMetadataJson' WHERE entity_id = 'org_admin_$orgId';")

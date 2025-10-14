@@ -151,7 +151,7 @@ object ProcessTenantConstructor {
       } catch {
         case e: Exception =>
           println(s"Warning: JSON node could not be updated. Error: ${e.getMessage}")
-          configJson
+          configJson.path("questionCard")
       }
     }
 
@@ -187,9 +187,12 @@ object ProcessTenantConstructor {
           .replace("${orgId}", orgId.toString)
 
         val updatedJson = json.deepCopy().asInstanceOf[ObjectNode]
-        updatedJson.at("/dataset_query/native")
-          .asInstanceOf[ObjectNode]
-          .set("query", TextNode.valueOf(updatedQuery))
+        val dq = updatedJson.path("dataset_query")
+        val native = dq.path("native")
+        native match {
+          case obj: ObjectNode => obj.put("query", updatedQuery)
+          case _ => throw new IllegalArgumentException("Missing or invalid dataset_query.native object")
+        }
 
         updatedJson
       } match {

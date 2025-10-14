@@ -22,7 +22,7 @@
             "options": null
           }
         },
-        "query": "SELECT\r\n    DATE_TRUNC('week', COALESCE(rating_updated_at)) AS \"Week Start\",\r\n    AVG(rating) AS \"Avg Rating\"\r\nFROM ${tenantOrgMentorRatingTable}\r\nWHERE 1 = 1\r\n[[AND {{select_org_a}}]]\r\n  AND rating_updated_at >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '6 months'\r\nGROUP BY DATE_TRUNC('week', COALESCE(rating_updated_at))\r\nORDER BY \"Week Start\";"
+        "query": "SELECT\r\n    DATE_TRUNC('week', rating_updated_at) AS \"Week Start\",\r\n    AVG(rating) AS \"Avg Rating\"\r\nFROM ${tenantOrgMentorRatingTable}\r\nWHERE 1 = 1\r\n[[AND {{select_org_a}}]]\r\n  AND rating_updated_at >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '6 months'\r\nGROUP BY DATE_TRUNC('week', rating_updated_at)\r\nORDER BY \"Week Start\";"
       }
     },
     "display": "line",

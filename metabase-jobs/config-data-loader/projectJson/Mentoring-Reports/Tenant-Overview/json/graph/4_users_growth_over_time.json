@@ -21,7 +21,7 @@
             "options": null
           }
         },
-        "query": "SELECT\r\n DATE_TRUNC('month', u.created_at) AS \"Months\",\r\n  COUNT(*) AS \"Users Created\",\r\n  SUM(COUNT(*)) OVER (ORDER BY DATE_TRUNC('month', u.created_at)) AS \"Overall Users\"\r\nFROM\r\n  \"${tenantUserTable}\" u\r\nJOIN\r\n    ${tenantOrgRolesTable} roles\r\nON u.user_id = roles.user_id\r\nWHERE\r\n  status = 'ACTIVE'\r\n    AND u.created_at >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '12 months'\r\n  [[AND org_name = (\r\n    SELECT org_name\r\n    FROM \"${tenantOrgRolesTable}\"\r\n    WHERE {{select_organization}}\r\n    LIMIT 1)]]\r\nGROUP BY\r\n    u.created_at"
+        "query": "SELECT\r\n DATE_TRUNC('month', u.created_at) AS \"Months\",\r\n  COUNT(DISTINCT u.user_id) AS \"Users Created\",\r\n  SUM(COUNT(DISTINCT u.user_id)) OVER (ORDER BY DATE_TRUNC('month', u.created_at)) AS \"Overall Users\"\r\nFROM\r\n  ${tenantUserTable} u\r\nJOIN\r\n    ${tenantOrgRolesTable} roles\r\nON u.user_id = roles.user_id\r\nWHERE\r\n  status = 'ACTIVE'\r\n    AND u.created_at >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '12 months'\r\n  [[AND org_name = (\r\n    SELECT org_name\r\n    FROM \"${tenantOrgRolesTable}\"\r\n    WHERE {{select_organization}}\r\n    LIMIT 1)]]\r\nGROUP BY\r\n    DATE_TRUNC('month', u.created_at)\r\nORDER BY\r\n  \"Months\";"
       }
     },
     "display": "line",

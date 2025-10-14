@@ -17,9 +17,13 @@ object AddQuestionCards {
       case array: ArrayNode => array
       case _ => objectMapper.createArrayNode()
     }
-    val dashCardsNode = readJsonFile(jsonFile)
-    dashCardsNode.foreach { value =>
-      existingDashcards.add(value)
+    val toAppend = readJsonFile(jsonFile)
+    toAppend.foreach {
+      case arr: ArrayNode =>
+        val it = arr.elements()
+        while (it.hasNext) existingDashcards.add(it.next())
+      case node =>
+        existingDashcards.add(node)
     }
     val finalDashboardJson = objectMapper.createObjectNode()
     finalDashboardJson.set("dashcards", existingDashcards)

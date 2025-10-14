@@ -20,13 +20,11 @@ object Utils {
         -1
 
       case None =>
-        val parentIdField = parentId.map(pid => s""""parent_id": $pid,""").getOrElse("")
-        val collectionRequestBody =
-          s"""{
-             |  $parentIdField
-             |  "name": "$collectionName",
-             |  "description": "$description"
-             |}""".stripMargin
+        val body = mapper.createObjectNode()
+          .put("name", collectionName)
+          .put("description", description)
+        parentId.foreach(pid => body.put("parent_id", pid))
+        val collectionRequestBody = body.toString
         val collectionId = mapper.readTree(metabaseUtil.createCollection(collectionRequestBody)).path("id").asInt()
         println(s"$collectionName : collection created with ID = $collectionId")
         collectionId
@@ -34,13 +32,11 @@ object Utils {
   }
 
   def createCollection(collectionName: String, description: String, metabaseUtil: MetabaseUtil, parentId: Option[Int] = None): Int = {
-    val parentIdField = parentId.map(pid => s""""parent_id": $pid,""").getOrElse("")
-    val collectionRequestBody =
-      s"""{
-         |  $parentIdField
-         |  "name": "$collectionName",
-         |  "description": "$description"
-         |}""".stripMargin
+    val body = mapper.createObjectNode()
+      .put("name", collectionName)
+      .put("description", description)
+    parentId.foreach(pid => body.put("parent_id", pid))
+    val collectionRequestBody = body.toString
     val collectionId = mapper.readTree(metabaseUtil.createCollection(collectionRequestBody)).path("id").asInt()
     println(s"$collectionName : collection created with ID = $collectionId")
     collectionId
@@ -91,14 +87,12 @@ object Utils {
 
 
   def createDashboard(collectionId: Int, dashboardName: String, dashboardDescription: String, metabaseUtil: MetabaseUtil): Int = {
-    val dashboardRequestBody =
-      s"""{
-         |  "name": "$dashboardName",
-         |  "description": "$dashboardDescription",
-         |  "collection_id": "$collectionId",
-         |  "collection_position": "1"
-         |}""".stripMargin
-    val dashboardId = mapper.readTree(metabaseUtil.createDashboard(dashboardRequestBody)).path("id").asInt()
+    val body = mapper.createObjectNode()
+      .put("name", dashboardName)
+      .put("description", dashboardDescription)
+      .put("collection_id", collectionId)
+      .put("collection_position", 1)
+    val dashboardId = mapper.readTree(metabaseUtil.createDashboard(body.toString)).path("id").asInt()
     println(s"$dashboardName : dashboard created with ID = $dashboardId")
     dashboardId
   }

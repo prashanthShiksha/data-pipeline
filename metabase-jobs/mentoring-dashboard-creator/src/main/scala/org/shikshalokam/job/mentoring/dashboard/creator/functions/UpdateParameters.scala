@@ -4,10 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.{ArrayNode, ObjectNode}
 import org.shikshalokam.job.util.{MetabaseUtil, PostgresUtil}
 import scala.collection.JavaConverters._
+import org.slf4j.{Logger, LoggerFactory}
 
 object UpdateParameters {
+  private val logger: Logger = LoggerFactory.getLogger(UpdateParameters.getClass)
+
   def updateParameterFunction(metabaseUtil: MetabaseUtil, postgresUtil: PostgresUtil, parametersQuery: String, slugNameToStateIdMap: Map[String, Int], dashboardId: Int): Unit = {
-    println(s"-----------Started Processing State dashboard parameter ------------")
+    logger.info("Started processing dashboard parameter")
 
     val objectMapper = new ObjectMapper()
     val parameterData: List[Any] = postgresUtil.fetchData(parametersQuery).flatMap(_.get("config"))
@@ -39,7 +42,7 @@ object UpdateParameters {
                 }
                 Some(updatedParam)
               case None =>
-                println(s"No card_id found for slug '$slug', skipping update")
+                logger.debug(s"No card_id found for slug '$slug', skipping update")
                 None
             }
           } else {
@@ -48,15 +51,13 @@ object UpdateParameters {
           }
         } catch {
           case e: Exception =>
-            println(s"Error processing param: ${param.toString}")
-            println(s"Error: ${e.getMessage}")
+            logger.error(s"Error processing param: $param", e)
             None
         }
       }.toList
     } catch {
       case e: Exception =>
-        println(s"Error during JSON processing: ${e.getMessage}")
-        e.printStackTrace()
+        logger.error("Error during JSON processing", e)
         List.empty
     }
     val dashboardResponse = metabaseUtil.getDashboardDetailsById(dashboardId)
@@ -74,11 +75,11 @@ object UpdateParameters {
     updatePayload.set("parameters", finalParametersArray)
 
     metabaseUtil.addQuestionCardToDashboard(dashboardId, updatePayload.toString)
-    println(s"----------------Successfully updated State dashboard parameter----------------")
+    logger.info("Successfully updated dashboard parameter")
   }
 
-  def UpdateAdminParameterFunction(metabaseUtil: MetabaseUtil, parametersQuery: String, dashboardId: Int, postgresUtil: PostgresUtil): Unit = {
-    println(s"-----------Started Processing Admin dashboard parameter ------------")
+  def updateAdminParameterFunction(metabaseUtil: MetabaseUtil, parametersQuery: String, dashboardId: Int, postgresUtil: PostgresUtil): Unit = {
+    logger.info("Started processing Admin dashboard parameter")
 
     val objectMapper = new ObjectMapper()
     val parameterData: List[Any] = postgresUtil.fetchData(parametersQuery).flatMap(_.get("config"))
@@ -113,6 +114,6 @@ object UpdateParameters {
     updatePayload.set("parameters", finalParametersJson)
 
     metabaseUtil.addQuestionCardToDashboard(dashboardId, updatePayload.toString)
-    println(s"----------------Successfully updated Admin dashboard parameter ----------------")
+    logger.info("Successfully updated Admin dashboard parameter")
   }
 }

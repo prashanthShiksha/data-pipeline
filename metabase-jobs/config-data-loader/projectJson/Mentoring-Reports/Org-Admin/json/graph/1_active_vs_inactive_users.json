@@ -84,7 +84,7 @@
     "display": "pie",
     "visualization_settings": {
       "pie.dimension": "status",
-      "pie.metric": "active_users",
+      "pie.metric": "Users Count",
       "pie.percent_visibility": "legend"
     },
     "parameters": [

@@ -22,7 +22,7 @@
             "options": null
           }
         },
-        "query": "SELECT \r\n    COUNT(DISTINCT u.user_id) AS \"Total Mentors\"\r\nFROM ${tenantUserTable} u\r\nJOIN ${tenantOrgRolesTable} r\r\n    ON u.user_id = r.user_id\r\nWHERE r.role_name = 'mentor'\r\nAND u.status = 'ACTIVE'\r\n    [[AND org_name = (\r\n    SELECT org_name\r\n    FROM \"${tenantOrgRolesTable}\"\r\n    WHERE {{select_organization}}\r\n    LIMIT 1)]]\r\n"
+        "query": "SELECT \r\n    COUNT(DISTINCT u.user_id) AS \"Total Mentors\"\r\nFROM ${tenantUserTable} u\r\nJOIN ${tenantOrgRolesTable} r\r\n    ON u.user_id = r.user_id\r\nWHERE r.role_name = 'mentor'\r\nAND u.status = 'ACTIVE'\r\n    [[AND org_name = (\r\n    SELECT org_name\r\n    FROM ${tenantOrgRolesTable}\r\n    WHERE {{select_organization}}\r\n    LIMIT 1)]]\r\n"
       }
     },
     "display": "scalar",

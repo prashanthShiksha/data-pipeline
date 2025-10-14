@@ -22,7 +22,7 @@
             "options": null
           }
         },
-        "query": "SELECT\r\n  r.org_name AS \"Org Name\",\r\n  COUNT(DISTINCT u.user_id) AS \"Users Count\"\r\nFROM\r\n  \"${tenantOrgRolesTable}\" r\r\nJOIN\r\n  \"${tenantUserTable}\" u \r\n  ON u.user_id = r.user_id\r\nWHERE\r\n  u.status = 'ACTIVE'\r\n\r\n [[AND org_name = (\r\n    SELECT org_name\r\n    FROM \"${tenantOrgRolesTable}\"\r\n    WHERE {{select_organization}}\r\n    LIMIT 1)]]\r\n      \r\nGROUP BY\r\n  r.org_name\r\nORDER BY\r\n  \"Users Count\" DESC;\r\n"
+        "query": "SELECT\r\n  r.role_name AS \"Platform Roles Name\",\r\n  COUNT(DISTINCT u.user_id) AS \"Users Count\"\r\nFROM\r\n  \"${tenantOrgRolesTable}\" r\r\nJOIN\r\n  \"${tenantUserTable}\" u \r\n  ON u.user_id = r.user_id\r\nWHERE\r\n  u.status = 'ACTIVE'\r\n\r\n [[AND org_name = (\r\n    SELECT org_name\r\n    FROM \"${tenantOrgRolesTable}\"\r\n    WHERE {{select_organization}}\r\n    LIMIT 1)]]\r\n      \r\nGROUP BY\r\n  r.role_name\r\nORDER BY\r\n  \"Users Count\" DESC;\r\n"
       }
     },
     "display": "bar",
