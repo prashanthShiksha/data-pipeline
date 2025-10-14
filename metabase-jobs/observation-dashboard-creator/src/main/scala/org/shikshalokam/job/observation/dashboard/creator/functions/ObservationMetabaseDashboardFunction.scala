@@ -100,7 +100,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
       val programExternalId = resultMap.get("program_external_id").map(_.toString).getOrElse("")
       val solutionDescription = resultMap.get("description").map(_.toString).getOrElse("")
 
-      val programCollectionName = s"$programName [org : $orgName]"
+      val programCollectionName = s"$programName"
       val solutionCollectionName = s"$solutionName [Observation]"
 
       var tabList: List[String] = List()
