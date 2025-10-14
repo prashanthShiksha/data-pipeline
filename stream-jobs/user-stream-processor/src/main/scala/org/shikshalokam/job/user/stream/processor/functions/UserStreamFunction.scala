@@ -389,6 +389,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
       println(s"Table $tableName has no rows → first time inserting data.")
       ""
     } else {
+      val safeValue = value.replace("'", "''")
       val query =
         s"""
            |SELECT
@@ -396,7 +397,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
            |        WHEN EXISTS (
            |            SELECT 1
            |            FROM $tableName
-           |            WHERE $columnName = '$value'
+           |            WHERE $columnName = '$safeValue'
            |        )
            |        THEN 'Yes'
            |        ELSE 'No'
