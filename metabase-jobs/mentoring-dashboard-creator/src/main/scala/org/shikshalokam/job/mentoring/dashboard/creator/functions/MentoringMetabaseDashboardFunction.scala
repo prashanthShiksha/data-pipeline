@@ -59,6 +59,8 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
     val metabaseApiKey: String = config.metabaseApiKey
     val tenantCode: String = event.tenantCode
     val orgId: String = event.orgId
+    val filterSync: String = event.filterSync
+    val filterTable: String = event.filterTable
     val tenantUserTable = s"${tenantCode}_users"
     val tenantSessionTable: String = s"${tenantCode}_sessions"
     val tenantSessionAttendanceTable: String = s"${tenantCode}_session_attendance"
@@ -71,6 +73,28 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
     if (databaseId < 0) {
       logger.error(s"Metabase database '$metabaseDatabase' not found; skipping event.")
       return
+    }
+
+    if (filterSync.nonEmpty){
+      val searchTableResponse = metabaseUtil.searchTable(filterTable, databaseId)
+      val filterTableId: Int = extractTableId(searchTableResponse)
+      if (filterTableId != -1) {
+        metabaseUtil.discardValues(filterTableId)
+        metabaseUtil.rescanValues(filterTableId)
+      } else {
+        println(s"Table does not exits in the metabase DB")
+      }
+      println("Successfully updated the filters values")
+    }
+
+    def extractTableId(response: String): Int = {
+      val json = ujson.read(response)
+      val dataArr = json("data").arr
+      if (dataArr.nonEmpty && dataArr(0).obj.contains("table_id")) {
+        dataArr(0)("table_id").num.toInt
+      } else {
+        -1
+      }
     }
 
     if (tenantCode.nonEmpty) {
