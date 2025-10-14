@@ -484,6 +484,79 @@ class MetabaseUtil(url: String, metabaseUsername: String, metabasePassword: Stri
   }
 
   /**
+   * Method to rescan values in Metabase
+   * @param tableId
+   * @return JSON string representing the status of the rescan values
+   */
+
+  def rescanValues(tableId: Int): String = {
+    val url = s"$metabaseUrl/table/$tableId/rescan_values"
+
+    val response = requests.post(
+      url,
+      headers = Map(
+        "Content-Type" -> "application/json",
+        "X-Metabase-Session" -> getSessionToken
+      )
+    )
+
+    if (response.statusCode == 200) {
+      val responseBody = ujson.read(response.text).render()
+      responseBody
+    } else {
+      throw new Exception(s"Failed to rescan the table: ${response.statusCode}, message: ${response.text}")
+    }
+  }
+
+  /**
+   * Method to discard values in Metabase
+   * @param tableId
+   * @return JSON string representing the status of the discard values
+   */
+
+
+  def discardValues(tableId: Int): String = {
+    val url = s"$metabaseUrl/table/$tableId/discard_values"
+
+    val response = requests.post(
+      url,
+      headers = Map(
+        "Content-Type" -> "application/json",
+        "X-Metabase-Session" -> getSessionToken
+      )
+    )
+
+    if (response.statusCode == 200) {
+      val responseBody = ujson.read(response.text).render()
+      responseBody
+    } else {
+      throw new Exception(s"Failed to discard filter values from the table: ${response.statusCode}, message: ${response.text}")
+    }
+  }
+
+  /**
+   * Method to search a table in Metabase
+    * @param tableName
+   * @param tableDbId
+   * @return JSON string representing the status of the search table
+   */
+
+  def searchTable(tableName: String, tableDbId: Int): String = {
+    val url = s"$metabaseUrl/search"
+    val params = Map(
+      "q" -> tableName,
+      "models" -> "table",
+      "table_db_id" -> tableDbId.toString
+    )
+    val headers = Map(
+      "X-Metabase-Session" -> getSessionToken
+    )
+    val response = requests.get(url, params = params, headers = headers)
+    if (response.statusCode == 200) response.text
+    else throw new Exception(s"Search failed: ${response.statusCode}, ${response.text}")
+  }
+
+  /**
    * Method to update a user's password in Metabase
    *
    * @param userId      ID of the user to update the password for
