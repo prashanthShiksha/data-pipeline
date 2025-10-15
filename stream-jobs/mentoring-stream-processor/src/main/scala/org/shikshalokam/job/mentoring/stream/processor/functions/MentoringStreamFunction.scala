@@ -360,6 +360,7 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
       println(s"Table $tableName has no rows → first time inserting data.")
       ""
     } else {
+      val safeValue = value.replace("'", "''")
       val query =
         s"""
            |SELECT
@@ -367,7 +368,7 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
            |        WHEN EXISTS (
            |            SELECT 1
            |            FROM $tableName
-           |            WHERE $columnName = '$value'
+           |            WHERE $columnName = '$safeValue'
            |        )
            |        THEN 'Yes'
            |        ELSE 'No'
