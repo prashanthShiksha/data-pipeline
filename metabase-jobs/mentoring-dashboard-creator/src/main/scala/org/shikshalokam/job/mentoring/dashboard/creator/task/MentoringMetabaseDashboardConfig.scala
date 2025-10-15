@@ -4,7 +4,6 @@ import com.typesafe.config.Config
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.typeutils.TypeExtractor
 import org.shikshalokam.job.BaseJobConfig
-//import org.shikshalokam.job.domain.reader.Event
 import org.shikshalokam.job.mentoring.dashboard.creator.domain.Event
 
 
