@@ -341,6 +341,7 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
               println(s"Inserted mentoringDashboard details. Affected rows: $affectedRows")
               dashboardData.put("tenantCode", event.tenantCode)
               dashboardData.put("orgId", event.orgId)
+              dashboardData.put("orgName", event.orgName)
             }
         }
       }

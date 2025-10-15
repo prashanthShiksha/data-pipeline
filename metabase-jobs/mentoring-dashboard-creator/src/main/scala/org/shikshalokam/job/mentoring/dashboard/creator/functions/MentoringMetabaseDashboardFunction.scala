@@ -59,6 +59,7 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
     val metabaseApiKey: String = config.metabaseApiKey
     val tenantCode: String = event.tenantCode
     val orgId: String = event.orgId
+    val orgName: String = event.orgName
     val filterSync: String = event.filterSync
     val filterTable: String = event.filterTable
     val tenantUserTable = s"${tenantCode}_users"
@@ -100,7 +101,7 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
     if (tenantCode.nonEmpty) {
       createCollectionAndDashboardForTenant(tenantCode)
       if (orgId.nonEmpty) {
-        createCollectionAndDashboardForOrg(orgId.toInt, tenantCode)
+        createCollectionAndDashboardForOrg(orgId.toInt, tenantCode, orgName)
       } else {
         println(s"[SKIP] Skipping Org Admin dashboard creation due to missing orgId.")
       }
@@ -109,11 +110,11 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
     }
 
     def createCollectionAndDashboardForTenant(tenantCode: String): Unit = {
-      val (collectionName, collectionDescription) = (s"Mentoring Activity $tenantCode", s"Dashboards for Tenant Admin with Overview and Compare tabs.\n\nCollection For: ${tenantCode}_Tenant_Admin")
+      val (collectionName, collectionDescription) = (s"Mentoring Report [tenant: $tenantCode]", s"Dashboards for Tenant Admin with Overview and Compare tabs.\n\nCollection For: Tenant  Admin")
       val collectionId = Utils.checkAndCreateCollection(collectionName, collectionDescription, metabaseUtil)
       if (collectionId != -1) {
-        Utils.createGroupForCollection(metabaseUtil, s"Mentoring_Tenant_Admin_${tenantCode}", collectionId)
-        val (dashboardName, dashboardDescription) = ("Mentoring Reports", s"Overview + Comparasion metrics for [$tenantCode]")
+        Utils.createGroupForCollection(metabaseUtil, s"Tenant_Admin_Mentoring_$tenantCode", collectionId)
+        val (dashboardName, dashboardDescription) = ("Dashboard", s"Overview + Comparasion metrics for [$tenantCode]")
         val dashboardId: Int = Utils.createDashboard(collectionId, dashboardName, dashboardDescription, metabaseUtil)
         val tabIdMap = Utils.createTabs(dashboardId, tabList, metabaseUtil)
         createOverviewTabInsideTenantDashboard(collectionId, databaseId, dashboardId, tabIdMap, metaDataTable, reportConfig, metabaseDatabase, metabaseApiKey)
@@ -176,14 +177,14 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
       }
     }
 
-    def createCollectionAndDashboardForOrg(orgId: Int, tenantCode: String): Unit = {
-      val collectionName = s"Org Mentoring Activity $orgId"
-      val collectionDescription = s"This report has access to a dedicated dashboard offering insights and metrics specific to their own org. \n\nCollection For: Org Admin $orgId"
+    def createCollectionAndDashboardForOrg(orgId: Int, tenantCode: String, orgName: String): Unit = {
+      val collectionName = s"Mentoring Report [org: $orgName]"
+      val collectionDescription = s"This report has access to a dedicated dashboard offering insights and metrics specific to their own org. \n\nCollection For: Org Admin \n\nTenant: $tenantCode"
       val collectionId = Utils.checkAndCreateCollection(collectionName, collectionDescription, metabaseUtil)
       if (collectionId != -1) {
-        Utils.createGroupForCollection(metabaseUtil, s"Org_Admin_$orgId", collectionId)
-        val dashboardName = s"Org Mentoring Reports $orgId"
-        val dashboardDescription = s"Overview of Mentoring Across Org_$orgId"
+        Utils.createGroupForCollection(metabaseUtil, s"Org_Admin_Mentoring_$orgId", collectionId)
+        val dashboardName = s"Dashboard"
+        val dashboardDescription = s"Overview of Mentoring Across [Org: $orgName]"
         val dashboardId: Int = Utils.createDashboard(collectionId, dashboardName, dashboardDescription, metabaseUtil)
         val createDashboardQuery = s"UPDATE $metaDataTable SET status = 'Failed' WHERE entity_id = 'org_admin_$orgId';"
         val stateNameId = getTheColumnId(databaseId, tenantUserTable, "user_profile_one_name", metabaseUtil, metabasePostgresUtil, metabaseApiKey, createDashboardQuery)

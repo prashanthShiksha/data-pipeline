@@ -20,7 +20,7 @@
             "widget-type": "string/="
           }
         },
-        "query": "SELECT\r\n    DATE_TRUNC('month', rating_updated_at) AS \"Month Start\",\r\n    AVG(rating) AS \"Avg Rating\"\r\nFROM ${tenantOrgMentorRatingTable}\r\nWHERE 1 = 1\r\n[[AND {{select_org_b}}]]\r\n  AND rating_updated_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '12 months'\r\nGROUP BY DATE_TRUNC('month', rating_updated_at)\r\nORDER BY \"Month Start\";"
+        "query": "SELECT\r\n    DATE_TRUNC('month', rating_updated_at) AS \"Months\",\r\n    AVG(rating) AS \"Avg Rating\"\r\nFROM ${tenantOrgMentorRatingTable}\r\nWHERE 1 = 1\r\n[[AND {{select_org_b}}]]\r\n  AND rating_updated_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '12 months'\r\nGROUP BY DATE_TRUNC('month', rating_updated_at)\r\nORDER BY \"Months\";"
       }
     },
     "display": "line",

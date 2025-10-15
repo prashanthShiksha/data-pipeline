@@ -8,6 +8,8 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long) 
 
   def orgId: String = readOrDefault[String]("dashboardData.orgId", "")
 
+  def orgName: String = readOrDefault[String]("dashboardData.orgName", "")
+
   def filterSync: String = readOrDefault("dashboardData.filterSync", "")
 
   def filterTable: String = readOrDefault("dashboardData.filterTable", "")
