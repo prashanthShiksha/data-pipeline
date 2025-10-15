@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter
 import java.time.{Instant, ZoneId}
 import java.util
 import scala.collection.immutable._
+import scala.collection.mutable.ListBuffer
 
 class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTypeInfo: TypeInformation[Event], @transient var postgresUtil: PostgresUtil = null)
   extends BaseProcessFunction[Event, Event](config) {
@@ -133,6 +134,13 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
     println(s"rating: $rating")
     println(s"ratingUpdatedAt: $ratingUpdatedAt")
 
+    val compareDashboardSessionTableFilters: List[Map[String, String]] = List(
+      Map(
+        "org_name" -> orgName,
+        "table_name" -> tenantSessionTable
+      )
+    )
+
     def checkAndCreateTable(tableName: String, createTableQuery: String): Unit = {
       val checkTableExistsQuery =
         s"""SELECT EXISTS (
@@ -161,6 +169,15 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
         if (entity == "session") {
           val createSessionTable = config.createTenantSessionTable.replace("@sessions", tenantSessionTable)
           checkAndCreateTable(tenantSessionTable, createSessionTable)
+
+          val compareDashboardSessionTableFiltersList = ListBuffer[String]()
+          compareDashboardSessionTableFilters.foreach { filterMap =>
+            filterMap.foreach { case (key, value) =>
+              compareDashboardSessionTableFiltersList += checkIfValueExists(tenantSessionTable, "org_name", orgName)
+            }
+          }
+          val finalCompareDashboardSessionTableFilters: List[String] = compareDashboardSessionTableFiltersList.toList
+          checkExistenceOfDataAndPushMessageToKafka(finalCompareDashboardSessionTableFilters, context, tenantSessionTable, event.tenantCode)
 
           val insertSessionQuery =
             s"""
@@ -300,7 +317,7 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
     }
 
     if (!dashboardData.isEmpty) {
-      pushMentoringDashboardEvents(dashboardData, context, event)
+      pushMentoringDashboardEvents(dashboardData, context)
     }
 
     println(s"***************** Completed Processing Entity = ${event.entity} of Type = ${event.eventType}  *****************")
@@ -324,28 +341,76 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
               println(s"Inserted mentoringDashboard details. Affected rows: $affectedRows")
               dashboardData.put("tenantCode", event.tenantCode)
               dashboardData.put("orgId", event.orgId)
+              dashboardData.put("orgName", event.orgName)
             }
         }
       }
     }
 
-    def pushMentoringDashboardEvents(dashboardData: util.HashMap[String, String], context: ProcessFunction[Event, Event]#Context, event: Event): util.HashMap[String, AnyRef] = {
-      val objects = new util.HashMap[String, AnyRef]() {
-        put("_id", java.util.UUID.randomUUID().toString)
-        put("reportType", "Mentoring")
-        put("publishedAt", DateTimeFormatter
-          .ofPattern("yyyy-MM-dd HH:mm:ss")
-          .withZone(ZoneId.systemDefault())
-          .format(Instant.ofEpochMilli(System.currentTimeMillis())).asInstanceOf[AnyRef])
-        put("dashboardData", dashboardData)
-      }
+  }
+  private def checkIfValueExists(tableName: String, columnName: String, value: String)(implicit postgresUtil: PostgresUtil): String = {
+    if (value == null || value.trim.isEmpty) {
+      return ""
+    }
+    val rowCountQuery = s"SELECT COUNT(*) AS row_count FROM $tableName"
+    val rowCount = postgresUtil.executeQuery(rowCountQuery) { rs =>
+      if (rs.next()) rs.getLong("row_count") else 0
+    }
+    if (rowCount == 0) {
+      println(s"Table $tableName has no rows → first time inserting data.")
+      ""
+    } else {
+      val safeValue = value.replace("'", "''")
+      val query =
+        s"""
+           |SELECT
+           |    CASE
+           |        WHEN EXISTS (
+           |            SELECT 1
+           |            FROM $tableName
+           |            WHERE $columnName = '$safeValue'
+           |        )
+           |        THEN 'Yes'
+           |        ELSE 'No'
+           |    END AS exists_flag;
+           |""".stripMargin
 
-      val serializedEvent = ScalaJsonUtil.serialize(objects)
-      context.output(config.eventOutputTag, serializedEvent)
-      println(s"----> Pushed new Kafka message to ${config.outputTopic} topic")
-      println(objects)
-      objects
+      postgresUtil.executeQuery(query) { resultSet =>
+        if (resultSet.next()) resultSet.getString("exists_flag") else ""
+      }
+    }
+  }
+
+  private def checkExistenceOfDataAndPushMessageToKafka(resultList: List[String], context: ProcessFunction[Event, Event]#Context, tableName: String, tenantCode: String): Unit = {
+    if (resultList.exists(s => s == null || s.trim.isEmpty)) {
+      return
+    }
+    if (resultList.contains("No")) {
+      val eventData = new java.util.HashMap[String, String]()
+      eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
+      eventData.put("filterSync", "Yes")
+      pushMentoringDashboardEvents(eventData, context)
+      println(s"eventData: $eventData")
+    } else {
+      println(s"Data already Exists in $tableName → not sending Kafka message for $tableName")
+    }
+  }
+
+  private def pushMentoringDashboardEvents(dashboardData: util.HashMap[String, String], context: ProcessFunction[Event, Event]#Context): util.HashMap[String, AnyRef] = {
+    val objects = new util.HashMap[String, AnyRef]() {
+      put("_id", java.util.UUID.randomUUID().toString)
+      put("reportType", "Mentoring")
+      put("publishedAt", DateTimeFormatter
+        .ofPattern("yyyy-MM-dd HH:mm:ss")
+        .withZone(ZoneId.systemDefault())
+        .format(Instant.ofEpochMilli(System.currentTimeMillis())).asInstanceOf[AnyRef])
+      put("dashboardData", dashboardData)
     }
 
+    val serializedEvent = ScalaJsonUtil.serialize(objects)
+    context.output(config.eventOutputTag, serializedEvent)
+    println(s"----> Pushed new Kafka message to ${config.outputTopic} topic")
+    println(objects)
+    objects
   }
 }

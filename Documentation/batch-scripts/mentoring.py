@@ -88,22 +88,24 @@ def update_last_run(entity: str, ts: datetime):
 # ---------------- Sessions ----------------
 def process_sessions():
     logging.info("Processing sessions...")
-    conn = psycopg2.connect(**MENTORING)
-    cur = conn.cursor()
+    conn_mentoring = psycopg2.connect(**MENTORING)
+    conn_users = psycopg2.connect(**USERS)
+    cur_mentoring = conn_mentoring.cursor()
+    cur_users = conn_users.cursor()
 
     last_run = get_last_run("sessions")
 
     if last_run is None:
-        cur.execute("""
-            SELECT id, mentor_id, title, description, tenant_code, type, status,
+        cur_mentoring.execute("""
+            SELECT id, mentor_id, title, description, type, status,
                    mentor_organization_id, meeting_info, started_at, completed_at,
                    created_at, updated_at, deleted_at, recommended_for,
                    categories, medium, created_by, updated_by
             FROM sessions
         """)
     else:
-        cur.execute("""
-            SELECT id, mentor_id, title, description, tenant_code, type, status,
+        cur_mentoring.execute("""
+            SELECT id, mentor_id, title, description, type, status,
                    mentor_organization_id, meeting_info, started_at, completed_at,
                    created_at, updated_at, deleted_at, recommended_for,
                    categories, medium, created_by, updated_by
@@ -111,12 +113,12 @@ def process_sessions():
             WHERE created_at > %s OR updated_at > %s OR (deleted_at IS NOT NULL AND deleted_at > %s)
         """, (last_run, last_run, last_run))
 
-    rows = cur.fetchall()
+    rows = cur_mentoring.fetchall()
     logging.info(f"Fetched {len(rows)} sessions")
 
     for row in rows:
         (
-            session_id, mentor_id, title, description, tenant_code, type, status,
+            session_id, mentor_id, title, description, type, status,
             mentor_organization_id, meeting_info, started_at, completed_at,
             created_at, updated_at, deleted_at, recommended_for,
             categories, medium, created_by, updated_by
@@ -136,7 +138,7 @@ def process_sessions():
         org_id, org_name, org_code = None, None, None
         if mentor_organization_id:
             try:
-                cur_org = conn.cursor()
+                cur_org = conn_mentoring.cursor()
                 cur_org.execute(
                     """SELECT organization_id, name, organization_code
                        FROM organization_extension
@@ -149,6 +151,13 @@ def process_sessions():
                 cur_org.close()
             except Exception as e:
                 logging.error(f"Error fetching org {mentor_organization_id}: {e}")
+
+        # Get tenant_code from organizations table (users DB)
+        tenant_code = None
+        if mentor_organization_id:
+            cur_users.execute("SELECT tenant_code FROM organizations WHERE id = %s", (mentor_organization_id,))
+            org_row = cur_users.fetchone()
+            tenant_code = org_row[0] if org_row else None
 
         event = {
             "eventType": "create",
@@ -180,36 +189,52 @@ def process_sessions():
         producer.flush()
 
     update_last_run("sessions", datetime.now(timezone.utc))
-    cur.close()
-    conn.close()
+    cur_mentoring.close()
+    cur_users.close()
+    conn_mentoring.close()
+    conn_users.close()
 
 # ---------------- Attendance ----------------
 def process_attendance():
     logging.info("Processing attendance...")
-    conn = psycopg2.connect(**MENTORING)
-    cur = conn.cursor()
+    conn_mentoring = psycopg2.connect(**MENTORING)
+    conn_users = psycopg2.connect(**USERS)
+    cur_mentoring = conn_mentoring.cursor()
+    cur_users = conn_users.cursor()
     last_run = get_last_run("attendance")
 
     if last_run is None:
-        cur.execute("""
-            SELECT id, tenant_code, session_id, mentee_id, joined_at, left_at,
+        cur_mentoring.execute("""
+            SELECT id, session_id, mentee_id, joined_at, left_at,
                    is_feedback_skipped, type, created_at, updated_at, deleted_at
             FROM session_attendees
         """)
     else:
-        cur.execute("""
-            SELECT id, tenant_code, session_id, mentee_id, joined_at, left_at,
+        cur_mentoring.execute("""
+            SELECT id, session_id, mentee_id, joined_at, left_at,
                    is_feedback_skipped, type, created_at, updated_at, deleted_at
             FROM session_attendees
             WHERE created_at > %s OR updated_at > %s OR (deleted_at IS NOT NULL AND deleted_at > %s)
         """, (last_run, last_run, last_run))
 
-    rows = cur.fetchall()
+    rows = cur_mentoring.fetchall()
     logging.info(f"Fetched {len(rows)} attendance records")
 
     for row in rows:
-        (att_id, tenant_code, session_id, mentee_id, joined_at, left_at,
+        (att_id, session_id, mentee_id, joined_at, left_at,
          is_feedback_skipped, type, created_at, updated_at, deleted_at) = row
+
+        # Get mentor_organization_id from sessions table
+        cur_mentoring.execute("SELECT mentor_organization_id FROM sessions WHERE id = %s", (session_id,))
+        mentor_org = cur_mentoring.fetchone()
+        mentor_org_id = mentor_org[0] if mentor_org else None
+
+        # Get tenant_code from organizations table (users DB)
+        tenant_code = None
+        if mentor_org_id:
+            cur_users.execute("SELECT tenant_code FROM organizations WHERE id = %s", (mentor_org_id,))
+            org_row = cur_users.fetchone()
+            tenant_code = org_row[0] if org_row else None
 
         event = {
             "eventType": "create",
@@ -231,27 +256,31 @@ def process_attendance():
         producer.flush()
 
     update_last_run("attendance", datetime.now(timezone.utc))
-    cur.close()
-    conn.close()
+    cur_mentoring.close()
+    cur_users.close()
+    conn_mentoring.close()
+    conn_users.close()
 
 # ---------------- From Connections Table for Status as ACCEPTED ----------------
 def process_connections():
     logging.info("Processing connections...")
-    conn = psycopg2.connect(**MENTORING)
-    cur = conn.cursor()
+    conn_mentoring = psycopg2.connect(**MENTORING)
+    conn_users = psycopg2.connect(**USERS)
+    cur_mentoring = conn_mentoring.cursor()
+    cur_users = conn_users.cursor()
     last_run = get_last_run("connections")
 
     if last_run is None:
-        cur.execute("""
-            SELECT c.id, c.tenant_code, c.user_id, c.friend_id, c.status,
+        cur_mentoring.execute("""
+            SELECT c.id, c.user_id, c.friend_id, c.status,
                    c.created_by, c.updated_by, c.created_at, c.updated_at,
                    ue.organization_id, c.deleted_at
             FROM connections c
             LEFT JOIN user_extensions ue ON c.user_id = ue.user_id
         """)
     else:
-        cur.execute("""
-            SELECT c.id, c.tenant_code, c.user_id, c.friend_id, c.status,
+        cur_mentoring.execute("""
+            SELECT c.id, c.user_id, c.friend_id, c.status,
                    c.created_by, c.updated_by, c.created_at, c.updated_at,
                    ue.organization_id, c.deleted_at
             FROM connections c
@@ -259,12 +288,19 @@ def process_connections():
             WHERE c.created_at > %s OR c.updated_at > %s OR (c.deleted_at IS NOT NULL AND c.deleted_at > %s)
         """, (last_run, last_run, last_run))
 
-    rows = cur.fetchall()
+    rows = cur_mentoring.fetchall()
     logging.info(f"Fetched {len(rows)} connections")
 
     for row in rows:
-        (conn_id, tenant_code, user_id, friend_id, status,
+        (conn_id, user_id, friend_id, status,
          created_by, updated_by, created_at, updated_at, org_id, deleted_at) = row
+
+         # Get tenant_code from organizations table (users DB)
+        tenant_code = None
+        if org_id:
+            cur_users.execute("SELECT tenant_code FROM organizations WHERE id = %s", (org_id,))
+            org_row = cur_users.fetchone()
+            tenant_code = org_row[0] if org_row else None
 
         event = {
             "eventType": "create",
@@ -287,40 +323,51 @@ def process_connections():
 
     update_last_run("connections", datetime.now(timezone.utc))
 
-    cur.close()
-    conn.close()
+    cur_mentoring.close()
+    cur_users.close()
+    conn_mentoring.close()
+    conn_users.close()
 
 # ---------------- From Connection_Requests Table for Status as REQUESTED and REJECTED ----------------
 def process_connection_requests():
-        logging.info("Processing connection_requests...")
-        conn = psycopg2.connect(**MENTORING)
-        cur = conn.cursor()
-        last_run = get_last_run("connection_requests")
+    logging.info("Processing connection_requests...")
+    conn_mentoring = psycopg2.connect(**MENTORING)
+    conn_users = psycopg2.connect(**USERS)
+    cur_mentoring = conn_mentoring.cursor()
+    cur_users = conn_users.cursor()
+    last_run = get_last_run("connection_requests")
 
-        if last_run is None:
-            cur.execute("""
-                SELECT cr.id, cr.tenant_code, cr.user_id, cr.friend_id, cr.status,
+    if last_run is None:
+        cur_mentoring.execute("""
+            SELECT cr.id, cr.user_id, cr.friend_id, cr.status,
                        cr.created_by, cr.updated_by, cr.created_at, cr.updated_at,
                        ue.organization_id, cr.deleted_at
-                FROM connection_requests cr
-                LEFT JOIN user_extensions ue ON cr.user_id = ue.user_id
-            """)
-        else:
-            cur.execute("""
-                SELECT cr.id, cr.tenant_code, cr.user_id, cr.friend_id, cr.status,
+            FROM connection_requests cr
+            LEFT JOIN user_extensions ue ON cr.user_id = ue.user_id
+        """)
+    else:
+        cur_mentoring.execute("""
+            SELECT cr.id, cr.user_id, cr.friend_id, cr.status,
                        cr.created_by, cr.updated_by, cr.created_at, cr.updated_at,
                        ue.organization_id, cr.deleted_at
-                FROM connection_requests cr
-                LEFT JOIN user_extensions ue ON cr.user_id = ue.user_id
-                WHERE cr.created_at > %s OR cr.updated_at > %s OR (cr.deleted_at IS NOT NULL AND cr.deleted_at > %s)
-            """, (last_run, last_run, last_run))
+            FROM connection_requests cr
+            LEFT JOIN user_extensions ue ON cr.user_id = ue.user_id
+            WHERE cr.created_at > %s OR cr.updated_at > %s OR (cr.deleted_at IS NOT NULL AND cr.deleted_at > %s)
+        """, (last_run, last_run, last_run))
 
-        rows = cur.fetchall()
+        rows = cur_mentoring.fetchall()
         logging.info(f"Fetched {len(rows)} connection_requests")
 
         for row in rows:
-            (conn_id, tenant_code, user_id, friend_id, status,
+            (conn_id, user_id, friend_id, status,
              created_by, updated_by, created_at, updated_at, org_id, deleted_at) = row
+
+             # Get tenant_code from organizations table (users DB)
+            tenant_code = None
+            if org_id:
+                cur_users.execute("SELECT tenant_code FROM organizations WHERE id = %s", (org_id,))
+                org_row = cur_users.fetchone()
+                tenant_code = org_row[0] if org_row else None
 
             event = {
                 "eventType": "create",
@@ -341,40 +388,49 @@ def process_connection_requests():
             push_event(event)
             producer.flush()
 
-        update_last_run("connection_requests", datetime.now(timezone.utc))
-
-        cur.close()
-        conn.close()
+    update_last_run("connection_requests", datetime.now(timezone.utc))
+    cur_mentoring.close()
+    cur_users.close()
+    conn_mentoring.close()
+    conn_users.close()
 
 # ---------------- Org Mentor Ratings ----------------
 def process_orgMentorRatings():
     logging.info("Processing org mentor ratings...")
-    conn = psycopg2.connect(**MENTORING)
-    cur = conn.cursor()
+    conn_mentoring = psycopg2.connect(**MENTORING)
+    conn_users = psycopg2.connect(**USERS)
+    cur_mentoring = conn_mentoring.cursor()
+    cur_users = conn_users.cursor()
     last_run = get_last_run("orgMentorRatings")
 
     if last_run is None:
-        cur.execute("""
-            SELECT ue.user_id, ue.rating, ue.updated_at, ue.organization_id, ue.tenant_code, ue.deleted_at, oe.name
+        cur_mentoring.execute("""
+            SELECT ue.user_id, ue.rating, ue.updated_at, ue.organization_id, ue.deleted_at, oe.name
             FROM user_extensions ue
             LEFT JOIN organization_extension oe ON ue.organization_id = oe.organization_id
             WHERE ue.rating IS NOT NULL AND ue.is_mentor = TRUE
         """)
     else:
-        cur.execute("""
-            SELECT ue.user_id, ue.rating, ue.updated_at, ue.organization_id, ue.tenant_code, ue.deleted_at, oe.name
+        cur_mentoring.execute("""
+            SELECT ue.user_id, ue.rating, ue.updated_at, ue.organization_id, ue.deleted_at, oe.name
             FROM user_extensions ue
             LEFT JOIN organization_extension oe ON ue.organization_id = oe.organization_id
             WHERE ue.rating IS NOT NULL AND ue.is_mentor = TRUE
               AND ue.updated_at > %s
         """, (last_run,))
 
-    rows = cur.fetchall()
+    rows = cur_mentoring.fetchall()
     logging.info(f"Fetched {len(rows)} mentor ratings")
 
     for row in rows:
-        user_id, rating, updated_at, organization_id, tenant_code, deleted_at, name = row
+        user_id, rating, updated_at, organization_id, deleted_at, name = row
         avg_rating = rating.get("average") if isinstance(rating, dict) else rating
+
+        tenant_code = None
+        if organization_id:
+            cur_users.execute("SELECT tenant_code FROM organizations WHERE id = %s", (organization_id,))
+            org_row = cur_users.fetchone()
+            tenant_code = org_row[0] if org_row else None
 
         event = {
             "eventType": "create",
@@ -391,8 +447,10 @@ def process_orgMentorRatings():
         producer.flush()
 
     update_last_run("orgMentorRatings", datetime.now(timezone.utc))
-    cur.close()
-    conn.close()
+    cur_mentoring.close()
+    cur_users.close()
+    conn_mentoring.close()
+    conn_users.close()
 
 # ---------------- Main ----------------
 def main():

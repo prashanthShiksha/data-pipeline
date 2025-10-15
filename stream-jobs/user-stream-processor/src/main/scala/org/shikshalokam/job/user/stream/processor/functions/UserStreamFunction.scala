@@ -75,6 +75,8 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
     val tenantUserTable: String = s""""${tenantCode}_users""""
     val userMetrics: String = config.userMetrics
     val eventType = event.eventType
+    val userDashboardReportType = "User Dashboard"
+    val mentoringDashboardReportType = "Mentoring"
 
     println(s"userId: $userId")
     println(s"tenantCode: $tenantCode")
@@ -138,8 +140,8 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
         }
         processUsers(tenantUserTable, userId)
         val finalUserDashboardFilterList: List[String] = userDashboardFiltersList.toList
-        checkExistenceOfDataAndPushMessageToKafka(finalUserDashboardFilterList, context, tenantUserTable, event.tenantCode)
-
+        checkExistenceOfDataAndPushMessageToKafka(userDashboardReportType, finalUserDashboardFilterList, context, tenantUserTable, event.tenantCode)
+        checkExistenceOfDataAndPushMessageToKafka(mentoringDashboardReportType, finalUserDashboardFilterList, context, tenantUserTable, event.tenantCode, true)
         val resultList = ListBuffer[String]()
         resultList += checkIfValueExists(tenantUserMetadataTable.replace("\"", ""), "attribute_value", professionalRoleName)
         processUserMetadata(tenantUserMetadataTable, userId, "Professional Role", professionalRoleName, professionalRoleId)
@@ -147,7 +149,6 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
           println(s"Organization ID: ${org.get("id")}")
           val organizationsName = org.get("name").map(_.toString).orNull
           val organizationsId = org.get("id").map(_.toString).orNull
-
           /**
            * Processing for Orgs data
            */
@@ -155,6 +156,11 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
             println(s"Upserting for attribute_code: Organizations, attribute_value: $organizationsName, attribute_label: $organizationsId")
             resultList += checkIfValueExists(tenantUserMetadataTable.replace("\"", ""), "attribute_value", organizationsName)
             processUserMetadata(tenantUserMetadataTable, userId, "Organizations", organizationsName, organizationsId)
+
+            val orgDashboardFiltersList = ListBuffer[String]()
+            orgDashboardFiltersList += checkIfValueExists(orgRolesTable, "org_name", organizationsName)
+            val finalOrgDashboardFilterList: List[String] = orgDashboardFiltersList.toList
+            checkExistenceOfDataAndPushMessageToKafka(mentoringDashboardReportType, finalOrgDashboardFilterList, context, orgRolesTable, event.tenantCode, true)
           } else {
             println("Org name or Org Id is empty")
           }
@@ -187,7 +193,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
         }
 
         val finalResultList: List[String] = resultList.toList
-        checkExistenceOfDataAndPushMessageToKafka(finalResultList, context, tenantUserMetadataTable, event.tenantCode)
+        checkExistenceOfDataAndPushMessageToKafka(userDashboardReportType, finalResultList, context, tenantUserMetadataTable, event.tenantCode)
       } else if (eventType == "delete") {
         deleteData(tenantUserTable, userId)
       }
@@ -199,7 +205,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
       }
       userMetric(tenantUserTable)
       val finalUserMetricDashboardFiltersList: List[String] = userMetricDashboardFiltersList.toList
-      checkExistenceOfDataAndPushMessageToKafka(finalUserMetricDashboardFiltersList, context, userMetrics, event.tenantCode)
+      checkExistenceOfDataAndPushMessageToKafka(userDashboardReportType, finalUserMetricDashboardFiltersList, context, userMetrics, event.tenantCode)
     } else {
       println("Tenant Code is Empty")
     }
@@ -331,7 +337,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
       }
 
     if (!dashboardData.isEmpty) {
-      pushUserDashboardEvents(dashboardData, context)
+      pushUserDashboardEvents(userDashboardReportType, dashboardData, context)
     }
 
     println(s"***************** Completed Processing the User Event with User Id = ${event.userId} *****************")
@@ -389,6 +395,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
       println(s"Table $tableName has no rows → first time inserting data.")
       ""
     } else {
+      val safeValue = value.replace("'", "''")
       val query =
         s"""
            |SELECT
@@ -396,7 +403,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
            |        WHEN EXISTS (
            |            SELECT 1
            |            FROM $tableName
-           |            WHERE $columnName = '$value'
+           |            WHERE $columnName = '$safeValue'
            |        )
            |        THEN 'Yes'
            |        ELSE 'No'
@@ -409,7 +416,7 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
     }
   }
 
-  private def checkExistenceOfDataAndPushMessageToKafka(resultList: List[String], context: ProcessFunction[Event, Event]#Context, tableName: String, tenantCode: String): Unit = {
+  private def checkExistenceOfDataAndPushMessageToKafka(reportType: String, resultList: List[String], context: ProcessFunction[Event, Event]#Context, tableName: String, tenantCode: String, isMentoring: Boolean = false): Unit = {
     if (resultList.exists(s => s == null || s.trim.isEmpty)) {
       return
     }
@@ -418,17 +425,17 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
       eventData.put("filterTable", tableName.stripPrefix("\"").stripSuffix("\""))
       eventData.put("filterSync", "Yes")
       eventData.put("tenantCode", tenantCode)
-      pushUserDashboardEvents(eventData, context)
+      pushUserDashboardEvents(reportType, eventData, context, isMentoring)
       println(s"eventData: $eventData")
     } else {
       println(s"Data already Exists in $tableName → not sending Kafka message for $tableName")
     }
   }
 
-  private def pushUserDashboardEvents(dashboardData: util.HashMap[String, String], context: ProcessFunction[Event, Event]#Context): util.HashMap[String, AnyRef] = {
+  private def pushUserDashboardEvents(reportType: String, dashboardData: util.HashMap[String, String], context: ProcessFunction[Event, Event]#Context, isMentoring: Boolean = false): util.HashMap[String, AnyRef] = {
     val objects = new util.HashMap[String, AnyRef]() {
       put("_id", java.util.UUID.randomUUID().toString)
-      put("reportType", "User Dashboard")
+      put("reportType", reportType)
       put("publishedAt", DateTimeFormatter
         .ofPattern("yyyy-MM-dd HH:mm:ss")
         .withZone(ZoneId.systemDefault())
@@ -437,8 +444,11 @@ class UserStreamFunction(config: UserStreamConfig)(implicit val mapTypeInfo: Typ
     }
 
     val serializedEvent = ScalaJsonUtil.serialize(objects)
-    context.output(config.eventOutputTag, serializedEvent)
-    println(s"----> Pushed new Kafka message to ${config.outputTopic} topic")
+    val targetTag = if (isMentoring) config.mentoringEventOutputTag else config.eventOutputTag
+    context.output(targetTag, serializedEvent)
+
+    val targetTopic = if (isMentoring) config.mentoringOutputTopic else config.outputTopic
+    println(s"----> Pushed new Kafka message to $targetTopic topic")
     println(objects)
     objects
   }
