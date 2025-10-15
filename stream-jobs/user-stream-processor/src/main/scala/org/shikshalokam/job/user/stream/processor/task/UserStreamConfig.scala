@@ -15,10 +15,12 @@ class UserStreamConfig(override val config: Config) extends BaseJobConfig(config
   // Kafka Topics Configuration
   val inputTopic: String = config.getString("kafka.input.topic")
   val outputTopic: String = config.getString("kafka.output.topic")
+  val mentoringOutputTopic: String = config.getString("kafka.output.mentoring.topic")
 
   // Output Tags
   val eventOutputTag: OutputTag[String] = OutputTag[String]("user-dashboard-output-event")
-
+  val mentoringEventOutputTag: OutputTag[String] = OutputTag[String]("user-mentoring-output-event")
+  
   // Parallelism
   override val kafkaConsumerParallelism: Int = config.getInt("task.consumer.parallelism")
   val usersStreamParallelism: Int = config.getInt("task.sl.users.stream.parallelism")
@@ -27,6 +29,7 @@ class UserStreamConfig(override val config: Config) extends BaseJobConfig(config
   // Consumers
   val usersStreamConsumer: String = "user-stream-consumer"
   val metabaseDashboardProducer: String = "metabase-users-dashboard-producer"
+  val mentoringDashboardProducer: String = "metabase-mentoring-dashboard-producer"
 
   // Functions
   val usersStreamFunction: String = "UserStreamFunction"
