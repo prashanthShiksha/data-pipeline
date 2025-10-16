@@ -96,7 +96,7 @@ class SurveyMetabaseDashboardFunction(config: SurveyMetabaseDashboardConfig)(imp
         case List(map: Map[_, _]) => map.get("organisation_name").map(_.toString).getOrElse("")
         case _ => ""
       }
-      val programCollectionName = s"$programName [org : $orgName]"
+      val programCollectionName = s"$programName"
       val solutionCollectionName = s"$solutionName [Survey]"
       val tabList: List[String] = List("Status Report", "Question Report", "Status CSV", "Question CSV")
 
