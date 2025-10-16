@@ -138,11 +138,11 @@ def process_sessions():
         org_id, org_name, org_code = None, None, None
         if mentor_organization_id:
             try:
-                cur_org = conn_mentoring.cursor()
+                cur_org = conn_users.cursor()
                 cur_org.execute(
-                    """SELECT organization_id, name, organization_code
-                       FROM organization_extension
-                       WHERE organization_id = %s""",
+                    """SELECT id, name, code
+                       FROM organizations
+                       WHERE id = %s""",
                     (mentor_organization_id,)
                 )
                 org_row = cur_org.fetchone()

@@ -12,8 +12,8 @@ import org.shikshalokam.job.util.FlinkUtil
 
 import java.io.File
 
-class MetabaseDashboardTask(config: MentoringMetabaseDashboardConfig, kafkaConnector: FlinkKafkaConnector) {
-  println("inside MetabaseDashboardTask class")
+class MentoringMetabaseDashboardTask(config: MentoringMetabaseDashboardConfig, kafkaConnector: FlinkKafkaConnector) {
+  println("inside MentoringMetabaseDashboardTask class")
 
   private val serialVersionUID = -7729362727131516112L
 
@@ -32,7 +32,7 @@ class MetabaseDashboardTask(config: MentoringMetabaseDashboardConfig, kafkaConne
   }
 }
 
-object MetabaseDashboardTask {
+object MentoringMetabaseDashboardTask {
   def main(args: Array[String]): Unit = {
     println("Starting up the Metabase Dashboard creation Job")
     val configFilePath = Option(ParameterTool.fromArgs(args).get("config.file.path"))
@@ -41,7 +41,7 @@ object MetabaseDashboardTask {
     }.getOrElse(ConfigFactory.load("metabase-mentoring-dashboard.conf").withFallback(ConfigFactory.systemEnvironment()))
     val metabaseDashboardConfig = new MentoringMetabaseDashboardConfig(config)
     val kafkaUtil = new FlinkKafkaConnector(metabaseDashboardConfig)
-    val task = new MetabaseDashboardTask(metabaseDashboardConfig, kafkaUtil)
+    val task = new MentoringMetabaseDashboardTask(metabaseDashboardConfig, kafkaUtil)
     task.process()
   }
 }

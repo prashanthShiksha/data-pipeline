@@ -92,8 +92,7 @@ class MentoringStreamConfig(override val config: Config) extends BaseJobConfig(c
        |    categories TEXT,
        |    medium TEXT,
        |    created_by INT,
-       |    updated_by INT,
-       |    UNIQUE (mentor_id, org_id)
+       |    updated_by INT
        |);
     """.stripMargin
 

@@ -15,6 +15,7 @@ RUN apt update && apt install -y \
     jq \
     nano \
     postgresql postgresql-client \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Java environment variables
