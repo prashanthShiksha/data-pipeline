@@ -77,7 +77,12 @@ class UserServiceFunction(config: UserServiceConfig)(implicit val mapTypeInfo: T
     val isUserDeleted = getValue("deleted", event.isUserDeleted)
     val orgDetails = getValue("organizations", event.organizations)
     var userRoles: List[Map[String, Any]] = orgDetails.flatMap(_.get("roles").collect { case roles: List[Map[String, Any]] @unchecked => roles }.getOrElse(Nil))
-    val orgId: Int = orgDetails.headOption.flatMap(_.get("id")).map(_.asInstanceOf[Int]).getOrElse(0)
+    val orgIdOpt: Option[Int] = orgDetails.headOption.flatMap(_.get("id")).flatMap {
+      case i: Int => Some(i)
+      case l: Long => Some(l.toInt)
+      case s: String => scala.util.Try(s.toInt).toOption
+      case _ => None
+    }
 
     if (isUpdateEvent) {
       userRoles ++= event.newValues
@@ -94,7 +99,7 @@ class UserServiceFunction(config: UserServiceConfig)(implicit val mapTypeInfo: T
     println(s"User Name = $name")
     println(s"Unique User Name = $uniqueUserName")
     println(s"Tenant Code = $tenantCode")
-    println(s"Org Id = $orgId")
+    println(s"Org Id = ${orgIdOpt.getOrElse(-1)}")
     println(s"Email = $email")
     println(s"Password = $password")
     println(s"Phone = $phone")
@@ -118,7 +123,7 @@ class UserServiceFunction(config: UserServiceConfig)(implicit val mapTypeInfo: T
         case Some("tenant_admin") =>
           handleTenantAdmin(entity, eventType, name, email, password, uniqueUserName, Some(tenantCode))
         case Some("org_admin") =>
-          handleOrgAdmin(entity, eventType, name, email, password, uniqueUserName, Some(orgId))
+          handleOrgAdmin(entity, eventType, name, email, password, uniqueUserName, orgIdOpt)
         case Some("state_manager") =>
           handleStateAdmin(entity, eventType, name, email, password, uniqueUserName, stateId)
         case Some("district_manager") =>
@@ -175,7 +180,8 @@ class UserServiceFunction(config: UserServiceConfig)(implicit val mapTypeInfo: T
     def handleTenantAdmin(entity: String, eventType: String, name: String, email: String, password: String, uniqueUserName: String, tenantCodeOpt: Option[String]): Unit = {
       val tcOpt = tenantCodeOpt.map(_.trim).filter(_.nonEmpty)
       if (tcOpt.isEmpty) {
-        println("Missing tenant_code for tenant_admin; skipping."); return
+        println("Missing tenant_code for tenant_admin; skipping.");
+        return
       }
       val tc = tcOpt.get
       println(s"<<<======== Processing for the role Tenant_Admin_$tc ========>>>")
@@ -218,12 +224,18 @@ class UserServiceFunction(config: UserServiceConfig)(implicit val mapTypeInfo: T
     }
 
     def handleOrgAdmin(entity: String, eventType: String, name: String, email: String, password: String, uniqueUserName: String, orgId: Option[Int]): Unit = {
-      println(s"<<<======== Processing for the role Org_Admin_$orgId ========>>>")
+      val orgIdOpt = orgId.filter(_ > 0)
+      if (orgIdOpt.isEmpty) {
+        println("Missing orgId for org_admin; skipping.");
+        return
+      }
+      val orgIdSafe = orgIdOpt.get
+      println(s"<<<======== Processing for the role Org_Admin_$orgIdSafe ========>>>")
       if (entity == "user" && (eventType == "create" || eventType == "bulk-create")) {
         val userId = checkUserId(email)
         if (userId == -1) {
           val newUserId = createUser(name, email, password, uniqueUserName)
-          addUserToGroup("org_admin", None, None, newUserId, None, orgId)
+          addUserToGroup("org_admin", None, None, newUserId, None, Some(orgIdSafe))
           pushNotification(name, email, password, phone, context)
         } else {
           println("Stopped processing")
@@ -232,23 +244,23 @@ class UserServiceFunction(config: UserServiceConfig)(implicit val mapTypeInfo: T
       else if (entity == "user" && (eventType == "update" || eventType == "bulk-update")) {
         val oldRoles = extractRoles(event.oldValues)
         val newRoles = extractRoles(event.newValues)
-        val hadTenantAdmin = oldRoles.contains("org_admin")
-        val hasTenantAdmin = newRoles.contains("org_admin")
-        (hadTenantAdmin, hasTenantAdmin) match {
+        val hadOrgAdmin = oldRoles.contains("org_admin")
+        val hasOrgAdmin = newRoles.contains("org_admin")
+        (hadOrgAdmin, hasOrgAdmin) match {
           case (false, true) =>
             println("Trying to add user to org_admin role")
             val userId = checkUserId(email)
             if (userId == -1) {
               val newUserId = createUser(name, email, password, uniqueUserName)
-              addUserToGroup("org_admin", None, None, newUserId, None, orgId)
+              addUserToGroup("org_admin", None, None, newUserId, None, Some(orgIdSafe))
               pushNotification(name, email, password, phone, context)
             } else {
-              addUserToGroup("org_admin", None, None, userId, None, orgId)
+              addUserToGroup("org_admin", None, None, userId, None, Some(orgIdSafe))
             }
           case (true, false) =>
             println("Trying to remove user from org_admin role")
             val userId = checkUserId(email)
-            if (userId != -1) removeUserFromGroup("org_admin", None, None, userId, None, orgId)
+            if (userId != -1) removeUserFromGroup("org_admin", None, None, userId, None, Some(orgIdSafe))
           case (true, true) =>
             //This is a edge case scenario
             println("User already had and still has org_admin role")
@@ -431,6 +443,11 @@ class UserServiceFunction(config: UserServiceConfig)(implicit val mapTypeInfo: T
       return
     }
 
+    if (userRole == "org_admin" && orgId.forall(_ <= 0)) {
+      println("org_admin requires orgId; skipping group assignment")
+      return
+    }
+
     val existingUserGroups = metabaseUtil.listGroups()
 
     val groupNames: List[String] = userRole match {
@@ -439,7 +456,7 @@ class UserServiceFunction(config: UserServiceConfig)(implicit val mapTypeInfo: T
       case "tenant_admin" =>
         List(s"Tenant_Admin_${tenantCode.map(_.trim).getOrElse("")}", s"Tenant_Admin_Mentoring_${tenantCode.map(_.trim).getOrElse("")}")
       case "org_admin" =>
-        List(s"Org_Admin_Mentoring_${orgId.getOrElse("")}")
+        List(s"Org_Admin_Mentoring_${orgId.get}")
       case "state_manager" =>
         List(s"State_Manager_${stateId.getOrElse("")}")
       case "district_manager" =>
@@ -467,6 +484,11 @@ class UserServiceFunction(config: UserServiceConfig)(implicit val mapTypeInfo: T
       return
     }
 
+    if (userRole == "org_admin" && orgId.forall(_ <= 0)) {
+      println("org_admin requires orgId; skipping group removal")
+      return
+    }
+
     val existingUserGroups = metabaseUtil.listGroups()
 
     val groupNames: List[String] = userRole match {
@@ -475,7 +497,7 @@ class UserServiceFunction(config: UserServiceConfig)(implicit val mapTypeInfo: T
       case "tenant_admin" =>
         List(s"Tenant_Admin_${tenantCode.map(_.trim).getOrElse("")}", s"Tenant_Admin_Mentoring_${tenantCode.map(_.trim).getOrElse("")}")
       case "org_admin" =>
-        List(s"Org_Admin_Mentoring_${orgId.getOrElse("")}")
+        List(s"Org_Admin_Mentoring_${orgId.get}")
       case "state_manager" =>
         List(s"State_Manager_${stateId.getOrElse("")}")
       case "district_manager" =>
