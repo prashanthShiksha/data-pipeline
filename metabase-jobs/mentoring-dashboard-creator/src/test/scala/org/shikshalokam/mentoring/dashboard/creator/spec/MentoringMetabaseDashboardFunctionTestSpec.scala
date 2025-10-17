@@ -10,7 +10,7 @@ import org.mockito.Mockito.when
 import org.shikshalokam.BaseTestSpec
 import org.shikshalokam.job.connector.FlinkKafkaConnector
 import org.shikshalokam.job.mentoring.dashboard.creator.domain.Event
-import org.shikshalokam.job.mentoring.dashboard.creator.task.{MentoringMetabaseDashboardConfig, MetabaseDashboardTask}
+import org.shikshalokam.job.mentoring.dashboard.creator.task.{MentoringMetabaseDashboardConfig, MentoringMetabaseDashboardTask}
 
 class MentoringMetabaseDashboardFunctionTestSpec extends BaseTestSpec {
   implicit val mapTypeInfo: TypeInformation[java.util.Map[String, AnyRef]] = TypeExtractor.getForClass(classOf[java.util.Map[String, AnyRef]])
@@ -48,6 +48,6 @@ class MentoringMetabaseDashboardFunctionTestSpec extends BaseTestSpec {
 
   "Metabase Dashboard Creator Job " should "execute successfully " in {
     initialize()
-    new MetabaseDashboardTask(jobConfig, mockKafkaUtil).process()
+    new MentoringMetabaseDashboardTask(jobConfig, mockKafkaUtil).process()
   }
 }
