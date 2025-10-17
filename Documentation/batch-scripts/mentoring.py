@@ -170,7 +170,7 @@ def process_sessions():
             "tenant_code": tenant_code,
             "type": type,
             "status": status,
-            "org_id": org_id,
+            "org_id": str(org_id) if org_id is not None else None,
             "org_code": org_code,
             "org_name": org_name,
             "platform": platform,
@@ -356,40 +356,40 @@ def process_connection_requests():
             WHERE cr.created_at > %s OR cr.updated_at > %s OR (cr.deleted_at IS NOT NULL AND cr.deleted_at > %s)
         """, (last_run, last_run, last_run))
 
-        rows = cur_mentoring.fetchall()
-        logging.info(f"Fetched {len(rows)} connection_requests")
+    rows = cur_mentoring.fetchall()
+    logging.info(f"Fetched {len(rows)} connection_requests")
 
-        for row in rows:
-            (conn_id, user_id, friend_id, status,
-             created_by, updated_by, created_at, updated_at, org_id, deleted_at) = row
+    for row in rows:
+        (conn_id, user_id, friend_id, status,
+        created_by, updated_by, created_at, updated_at, org_id, deleted_at) = row
 
              # Get tenant_code from organizations table (users DB)
-            tenant_code = None
-            if org_id:
-                cur_users.execute("SELECT tenant_code FROM organizations WHERE id = %s", (org_id,))
-                org_row = cur_users.fetchone()
-                tenant_code = org_row[0] if org_row else None
+        tenant_code = None
+        if org_id:
+            cur_users.execute("SELECT tenant_code FROM organizations WHERE id = %s", (org_id,))
+            org_row = cur_users.fetchone()
+            tenant_code = org_row[0] if org_row else None
 
-            event = {
-                "eventType": "create",
-                "entity": "connections",
-                "connection_id": conn_id,
-                "tenant_code": tenant_code,
-                "user_id": user_id,
-                "friend_id": friend_id,
-                "status": status,
-                "org_id": org_id,
-                "created_by": created_by,
-                "updated_by": updated_by,
-                "created_at": created_at,
-                "updated_at": updated_at,
-                "deleted_at": deleted_at,
-                "deleted": deleted_at is not None
-            }
-            push_event(event)
-            producer.flush()
+        event = {
+            "eventType": "create",
+            "entity": "connections",
+            "connection_id": conn_id,
+            "tenant_code": tenant_code,
+            "user_id": user_id,
+            "friend_id": friend_id,
+            "status": status,
+            "org_id": org_id,
+            "created_by": created_by,
+            "updated_by": updated_by,
+            "created_at": created_at,
+            "updated_at": updated_at,
+            "deleted_at": deleted_at,
+            "deleted": deleted_at is not None
+        }
+        push_event(event)
+        producer.flush()
 
-    update_last_run("connection_requests", datetime.now(timezone.utc))
+        update_last_run("connection_requests", datetime.now(timezone.utc))
     cur_mentoring.close()
     cur_users.close()
     conn_mentoring.close()
@@ -406,17 +406,25 @@ def process_orgMentorRatings():
 
     if last_run is None:
         cur_mentoring.execute("""
-            SELECT ue.user_id, ue.rating, ue.updated_at, ue.organization_id, ue.deleted_at, oe.name
+            SELECT ue.user_id,  ue.rating, ue.updated_at, ue.organization_id, ue.deleted_at, oe.name
             FROM user_extensions ue
-            LEFT JOIN organization_extension oe ON ue.organization_id = oe.organization_id
-            WHERE ue.rating IS NOT NULL AND ue.is_mentor = TRUE
+            LEFT JOIN organization_extension oe
+                ON ue.organization_id = oe.organization_id
+            WHERE ue.is_mentor = TRUE
+              AND ue.rating IS NOT NULL
+              AND ue.rating::text NOT IN ('{}', '[null]', '[]')
+              AND trim(ue.rating::text) <> ''
         """)
     else:
         cur_mentoring.execute("""
-            SELECT ue.user_id, ue.rating, ue.updated_at, ue.organization_id, ue.deleted_at, oe.name
+            SELECT ue.user_id,  ue.rating, ue.updated_at, ue.organization_id, ue.deleted_at, oe.name
             FROM user_extensions ue
-            LEFT JOIN organization_extension oe ON ue.organization_id = oe.organization_id
-            WHERE ue.rating IS NOT NULL AND ue.is_mentor = TRUE
+            LEFT JOIN organization_extension oe
+                ON ue.organization_id = oe.organization_id
+            WHERE ue.is_mentor = TRUE
+                AND ue.rating IS NOT NULL
+                AND ue.rating::text NOT IN ('{}', '[null]', '[]')
+                AND trim(ue.rating::text) <> ''
               AND ue.updated_at > %s
         """, (last_run,))
 
