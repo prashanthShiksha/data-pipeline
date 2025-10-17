@@ -64,7 +64,8 @@ for f in os.listdir(LOG_DIR):
             os.remove(fpath)
 
 # ---------------- State Management ----------------
-STATE_FILE = "last_run.json"
+STATE_FILE = os.path.join(LOG_DIR, "last_run.json")
+os.makedirs(LOG_DIR, exist_ok=True)
 
 def get_last_run(entity: str):
     """Get last run timestamp for an entity. Return None if fresh run."""
