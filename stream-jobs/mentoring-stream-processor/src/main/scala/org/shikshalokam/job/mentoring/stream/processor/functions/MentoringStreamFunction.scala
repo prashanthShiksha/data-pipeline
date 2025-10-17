@@ -230,8 +230,8 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
             s"""
                |INSERT INTO $tenantConnectionsTable (id, connection_id, user_id, friend_id, status, org_id, created_by, updated_by, created_at, updated_at, deleted_at)
                |VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-               |ON CONFLICT (user_id, friend_id) DO UPDATE SET
-               |  connection_id = EXCLUDED.connection_id, status = EXCLUDED.status,
+               |ON CONFLICT (connection_id) DO UPDATE SET
+               |  user_id = EXCLUDED.user_id, friend_id = EXCLUDED.friend_id, status = EXCLUDED.status,
                |  org_id = EXCLUDED.org_id, created_by = EXCLUDED.created_by, updated_by = EXCLUDED.updated_by,
                |  created_at = EXCLUDED.created_at, updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at
                |""".stripMargin

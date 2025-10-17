@@ -127,8 +127,7 @@ class MentoringStreamConfig(override val config: Config) extends BaseJobConfig(c
        |    updated_by INT,
        |    created_at TIMESTAMPTZ,
        |    updated_at TIMESTAMPTZ,
-       |    deleted_at TIMESTAMPTZ,
-       |    UNIQUE (user_id, friend_id)
+       |    deleted_at TIMESTAMPTZ
        |);
     """.stripMargin
 
