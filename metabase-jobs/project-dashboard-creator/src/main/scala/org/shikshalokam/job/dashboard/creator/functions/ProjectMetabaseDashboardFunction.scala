@@ -71,7 +71,7 @@ class ProjectMetabaseDashboardFunction(config: ProjectMetabaseDashboardConfig)(i
     val solutionName = postgresUtil.fetchData(s"""SELECT name FROM $solutions WHERE solution_id = '$targetedSolutionId'""").collectFirst { case map: Map[_, _] => map.getOrElse("name", "").toString }.getOrElse("")
     val targetedProgramId: String = Option(event.targetedProgram).map(_.trim).filter(_.nonEmpty).getOrElse(postgresUtil.fetchData(s"SELECT program_id FROM $solutions WHERE solution_id = '$targetedSolutionId'").collectFirst { case map: Map[_, _] => map.get("program_id").map(_.toString).getOrElse("") }.getOrElse(""))
     val programName = postgresUtil.fetchData(s"""SELECT program_name FROM $solutions WHERE solution_id = '$targetedSolutionId'""").collectFirst { case map: Map[_, _] => map.getOrElse("program_name", "").toString }.getOrElse("")
-    val orgName = postgresUtil.fetchData(s"""SELECT org_name FROM $projects WHERE solution_id = '$targetedSolutionId' LIMIT 1 """).collectFirst { case map: Map[_, _] => map.getOrElse("org_name", "").toString }.getOrElse("")
+    val parentOrgId = postgresUtil.fetchData(s"""SELECT parent_org_id FROM $solutions WHERE program_id = '$targetedProgramId' AND parent_org_id IS NOT NULL AND TRIM(parent_org_id) <> '' LIMIT 1 """).collectFirst { case map: Map[_, _] => map.getOrElse("parent_org_id", "").toString }.getOrElse("")
     val stateName = postgresUtil.fetchData(s"""SELECT entity_name FROM $metaDataTable WHERE entity_id = '$targetedStateId'""").collectFirst { case map: Map[_, _] => map.getOrElse("entity_name", "").toString }.getOrElse("")
     val districtName = postgresUtil.fetchData(s"""SELECT entity_name FROM $metaDataTable WHERE entity_id = '$targetedDistrictId'""").collectFirst { case map: Map[_, _] => map.getOrElse("entity_name", "").toString }.getOrElse("")
     val tenantId = postgresUtil.fetchData(s"""SELECT tenant_id FROM $projects WHERE solution_id = '$targetedSolutionId' AND tenant_id IS NOT NULL AND TRIM(tenant_id) <> '' LIMIT 1 """).collectFirst { case map: Map[_, _] => map.getOrElse("tenant_id", "").toString }.getOrElse("")
@@ -211,7 +211,7 @@ class ProjectMetabaseDashboardFunction(config: ProjectMetabaseDashboardConfig)(i
         println("\n-->> Process Admin Programs Collection and project solution Dashboard")
         if (targetedSolutionId.nonEmpty && solutionName.nonEmpty && targetedProgramId.nonEmpty && programName.nonEmpty) {
           val programCollectionName = s"$programName"
-          val programCollectionDescription = s"Program Id: $targetedProgramId\n\nProgram External Id: $programExternalId\n\nCollection For: Admin\n\nProgram Description: $programDescription"
+          val programCollectionDescription = s"Program Id: $targetedProgramId\n\nProgram External Id: $programExternalId\n\nParent Organisation Id: $parentOrgId\n\nCollection For: Admin\n\nProgram Description: $programDescription"
           val solutionCollectionName = s"$solutionName [Project]"
           val solutionCollectionDescription = s"Solution Id: $targetedSolutionId\n\nSolution External Id: $solutionExternalId\n\nCollection For: Admin\n\nSolution Description: $solutionDescription"
 
@@ -245,7 +245,7 @@ class ProjectMetabaseDashboardFunction(config: ProjectMetabaseDashboardConfig)(i
         println("\n-->> Process Program Manager Collection and project solution Dashboard")
         if (targetedSolutionId.nonEmpty && solutionName.nonEmpty && targetedProgramId.nonEmpty && programName.nonEmpty) {
           val programCollectionName = s"$programName"
-          val programCollectionDescription = s"Program Id: $targetedProgramId\n\nProgram External Id: $programExternalId\n\nCollection For: Program Manager\n\nProgram Description: $programDescription"
+          val programCollectionDescription = s"Program Id: $targetedProgramId\n\nProgram External Id: $programExternalId\n\nParent Organisation Id: $parentOrgId\n\nCollection For: Program Manager\n\nProgram Description: $programDescription"
           val solutionCollectionName = s"$solutionName [Project]"
           val solutionCollectionDescription = s"Solution Id: $targetedSolutionId\n\nSolution External Id: $solutionExternalId\n\nCollection For: Program Manager\n\nSolution Description: $solutionDescription"
 

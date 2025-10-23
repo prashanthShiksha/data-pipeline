@@ -75,6 +75,7 @@ class SurveyStreamFunction(config: SurveyStreamConfig)(implicit val mapTypeInfo:
       var organisationId: String = ""
       var organisationName: String = ""
       var organisationCode: String = ""
+      val parentOrgId: String = event.parentOrgId
 
       event.organisation.foreach { org =>
         if (org.get("code").contains(event.organisationId)) {
@@ -145,8 +146,8 @@ class SurveyStreamFunction(config: SurveyStreamConfig)(implicit val mapTypeInfo:
       println("privateProgram = " + privateProgram)
 
       val upsertSolutionQuery =
-        s"""INSERT INTO ${config.solutions} (solution_id, external_id, name, description, duration, categories, program_id, program_name, program_external_id, program_description, private_program)
-           |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        s"""INSERT INTO ${config.solutions} (solution_id, external_id, name, description, duration, categories, program_id, program_name, program_external_id, program_description, private_program, parent_org_id)
+           |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            |ON CONFLICT (solution_id) DO UPDATE SET
            |    external_id = ?,
            |    name = ?,
@@ -157,15 +158,16 @@ class SurveyStreamFunction(config: SurveyStreamConfig)(implicit val mapTypeInfo:
            |    program_name = ?,
            |    program_external_id = ?,
            |    program_description = ?,
-           |    private_program = ?;
+           |    private_program = ?,
+           |    parent_org_id = ?;
            |""".stripMargin
 
       val solutionParams = Seq(
         // Insert parameters
-        solutionId, solutionExternalId, solutionName, solutionDescription, projectDuration, projectCategories, programId, programName, programExternalId, programDescription, privateProgram,
+        solutionId, solutionExternalId, solutionName, solutionDescription, projectDuration, projectCategories, programId, programName, programExternalId, programDescription, privateProgram, parentOrgId,
 
         // Update parameters (matching columns in the ON CONFLICT clause)
-        solutionExternalId, solutionName, solutionDescription, projectDuration, projectCategories, programId, programName, programExternalId, programDescription, privateProgram
+        solutionExternalId, solutionName, solutionDescription, projectDuration, projectCategories, programId, programName, programExternalId, programDescription, privateProgram, parentOrgId
       )
 
       postgresUtil.executePreparedUpdate(upsertSolutionQuery, solutionParams, config.solutions, solutionId)
