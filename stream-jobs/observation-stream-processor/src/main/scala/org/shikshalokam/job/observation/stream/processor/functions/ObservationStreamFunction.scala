@@ -254,7 +254,7 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
         println("===> Processing observation solution data")
         postgresUtil.createTable(config.createSolutionsTable, config.solutions)
         val upsertSolutionQuery =
-          s"""INSERT INTO ${config.solutions} (solution_id, external_id, name, description, duration, categories, program_id, program_name, program_external_id, program_description, private_program, parent_org_id)
+          s"""INSERT INTO ${config.solutions} (solution_id, external_id, name, description, duration, categories, program_id, program_name, program_external_id, program_description, private_program, org_id)
              |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              |ON CONFLICT (solution_id) DO UPDATE SET
              |    external_id = ?,
@@ -267,7 +267,7 @@ class ObservationStreamFunction(config: ObservationStreamConfig)(implicit val ma
              |    program_external_id = ?,
              |    program_description = ?,
              |    private_program = ?,
-             |    parent_org_id = ?;
+             |    org_id = ?;
              |""".stripMargin
 
         val solutionParams = Seq(

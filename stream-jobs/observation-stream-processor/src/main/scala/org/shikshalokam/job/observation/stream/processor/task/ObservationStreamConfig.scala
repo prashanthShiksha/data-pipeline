@@ -62,7 +62,7 @@ class ObservationStreamConfig(override val config: Config) extends BaseJobConfig
        |    program_external_id TEXT,
        |    program_description TEXT,
        |    private_program BOOLEAN,
-       |    parent_org_id TEXT
+       |    org_id TEXT
        |);""".stripMargin
 
   val createDashboardMetadataTable: String =

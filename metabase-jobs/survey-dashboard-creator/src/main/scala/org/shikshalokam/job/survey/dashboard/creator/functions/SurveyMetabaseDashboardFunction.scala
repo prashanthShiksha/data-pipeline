@@ -89,7 +89,7 @@ class SurveyMetabaseDashboardFunction(config: SurveyMetabaseDashboardConfig)(imp
       val programExternalId = resultMap.get("program_external_id").map(_.toString).getOrElse("")
       val programDescription = resultMap.get("program_description").map(_.toString).getOrElse("")
       val solutionDescription = resultMap.get("description").map(_.toString).getOrElse("")
-      val parentOrgId = postgresUtil.fetchData(s"""SELECT parent_org_id FROM $solutions WHERE program_id = '$targetedProgramId' AND parent_org_id IS NOT NULL AND TRIM(parent_org_id) <> '' LIMIT 1 """).collectFirst { case map: Map[_, _] => map.getOrElse("parent_org_id", "").toString }.getOrElse("")
+      val orgId = postgresUtil.fetchData(s"""SELECT org_id FROM $solutions WHERE program_id = '$targetedProgramId' AND org_id IS NOT NULL AND TRIM(org_id) <> '' LIMIT 1 """).collectFirst { case map: Map[_, _] => map.getOrElse("org_id", "").toString }.getOrElse("")
       val programName = postgresUtil.fetchData(s"""SELECT entity_name from $metaDataTable where entity_id = '$targetedProgramId'""").collectFirst { case map: Map[_, _] => map.get("entity_name").map(_.toString).getOrElse("") }.getOrElse("")
 
       val programCollectionName = s"$programName"
@@ -219,7 +219,7 @@ class SurveyMetabaseDashboardFunction(config: SurveyMetabaseDashboardConfig)(imp
       }
 
       def createProgramCollection(programCollectionName: String, targetedProgramId: String, programExternalId: String, programDescription: String, reportFor: String): Int = {
-        val programCollectionDescription = s"Program Id: $targetedProgramId\n\nProgram External Id: $programExternalId\n\nParent Organisation Id: $parentOrgId\n\nCollection For: $reportFor\n\nProgram Description: $programDescription"
+        val programCollectionDescription = s"Program Id: $targetedProgramId\n\nProgram External Id: $programExternalId\n\nOrganisation Id: $orgId\n\nCollection For: $reportFor\n\nProgram Description: $programDescription"
         val programCollectionId: Int = Utils.createCollection(programCollectionName, programCollectionDescription, metabaseUtil)
         if (programCollectionId != -1) {
           val programMetadataJson = new ObjectMapper().createArrayNode().add(new ObjectMapper().createObjectNode().put("collectionId", programCollectionId).put("collectionName", programCollectionName).put("Collection For", reportFor))
@@ -234,7 +234,7 @@ class SurveyMetabaseDashboardFunction(config: SurveyMetabaseDashboardConfig)(imp
       }
 
       def createProgramCollectionInsideAdmin(adminCollectionId: Int, targetedProgramId: String, programExternalId: String, programCollectionName: String, programDescription: String, reportFor: String): Int = {
-        val programCollectionDescription = s"Program Id: $targetedProgramId\n\nExternal Id: $programExternalId\n\nParent Organisation Id: $parentOrgId\n\nCollection For: $reportFor\n\nProgram Description: $programDescription"
+        val programCollectionDescription = s"Program Id: $targetedProgramId\n\nExternal Id: $programExternalId\n\nOrganisation Id: $orgId\n\nCollection For: $reportFor\n\nProgram Description: $programDescription"
         val programCollectionId = Utils.createCollection(programCollectionName, programCollectionDescription, metabaseUtil, Some(adminCollectionId))
         val programMetadataJson = new ObjectMapper().createArrayNode().add(new ObjectMapper().createObjectNode().put("collectionId", programCollectionId).put("collectionName", programCollectionName).put("Collection For", reportFor))
         val programMetadataJsonString = programMetadataJson.toString.replace("'", "''")

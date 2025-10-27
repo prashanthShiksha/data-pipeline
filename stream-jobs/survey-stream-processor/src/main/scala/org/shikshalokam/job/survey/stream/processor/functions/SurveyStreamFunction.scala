@@ -146,7 +146,7 @@ class SurveyStreamFunction(config: SurveyStreamConfig)(implicit val mapTypeInfo:
       println("privateProgram = " + privateProgram)
 
       val upsertSolutionQuery =
-        s"""INSERT INTO ${config.solutions} (solution_id, external_id, name, description, duration, categories, program_id, program_name, program_external_id, program_description, private_program, parent_org_id)
+        s"""INSERT INTO ${config.solutions} (solution_id, external_id, name, description, duration, categories, program_id, program_name, program_external_id, program_description, private_program, org_id)
            |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            |ON CONFLICT (solution_id) DO UPDATE SET
            |    external_id = ?,
@@ -159,7 +159,7 @@ class SurveyStreamFunction(config: SurveyStreamConfig)(implicit val mapTypeInfo:
            |    program_external_id = ?,
            |    program_description = ?,
            |    private_program = ?,
-           |    parent_org_id = ?;
+           |    org_id = ?;
            |""".stripMargin
 
       val solutionParams = Seq(
