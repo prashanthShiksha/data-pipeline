@@ -50,6 +50,10 @@ class Event(eventMap: java.util.Map[String, Any], partition: Int, offset: Long)
 
   def completedAt: Timestamp = parseTimestamp(extractValue[Any]("completed_at").orNull)
 
+  def startDate: Timestamp = parseTimestamp(extractValue[Any]("start_date").orNull)
+
+  def endDate: Timestamp = parseTimestamp(extractValue[Any]("end_date").orNull)
+
   def recommendedFor: String = extractCollectionAsCsv("recommended_for")
 
   def categories: String = extractCollectionAsCsv("categories")

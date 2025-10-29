@@ -1,6 +1,6 @@
 {
   "questionCard": {
-    "name": "Current Month Avg Mentor Rating",
+    "name": "Total Mentoring Hours Conducted",
     "collection_id": 22,
     "dataset_query": {
       "database": 3,
@@ -10,7 +10,7 @@
           "select_state": {
             "type": "dimension",
             "name": "select_state",
-            "id": "2e778697-1f75-41c8-b8ca-1107b1bc2ae7",
+            "id": "793e1394-53d2-4578-9e80-7a3ae4eba3a1",
             "display-name": "Select State",
             "dimension": [
               "field",
@@ -22,53 +22,61 @@
           "select_district": {
             "type": "dimension",
             "name": "select_district",
-            "id": "2a0298da-cd00-4835-bc16-a1e7e2fb4a70",
+            "id": "05c4660f-3589-4791-bba4-2cb7d2bd0ba1",
             "display-name": "Select District",
+            "default": null,
             "dimension": [
               "field",
               458,
               null
             ],
-            "widget-type": "string/="
+            "widget-type": "string/=",
+            "options": null
           },
           "select_block": {
             "type": "dimension",
             "name": "select_block",
-            "id": "a9f6b49e-a6a2-4c81-98a0-06f224dfeeb0",
+            "id": "7595dcf0-6008-46e6-b5e3-403a657e8e6b",
             "display-name": "Select Block",
+            "default": null,
             "dimension": [
               "field",
               450,
               null
             ],
-            "widget-type": "string/="
+            "widget-type": "string/=",
+            "options": null
           },
           "select_cluster": {
             "type": "dimension",
             "name": "select_cluster",
-            "id": "db9291c5-388f-436c-9d58-b92d816514af",
+            "id": "2d82abc8-dcb3-489e-84cf-275d3b4f6967",
             "display-name": "Select Cluster",
+            "default": null,
             "dimension": [
               "field",
               466,
               null
             ],
-            "widget-type": "string/="
+            "widget-type": "string/=",
+            "options": null
           },
           "select_school": {
             "type": "dimension",
             "name": "select_school",
-            "id": "dfdbaa4b-882d-4115-a3ea-c096919bde9f",
+            "id": "53aa7106-3a58-4bc6-9fd8-288afb9cf522",
             "display-name": "Select School",
+            "default": null,
             "dimension": [
               "field",
               460,
               null
             ],
-            "widget-type": "string/="
+            "widget-type": "string/=",
+            "options": null
           }
         },
-        "query": "SELECT \r\n    AVG(mr.rating) AS \"Avg Mentor Rating\"\r\nFROM ${tenantOrgMentorRatingTable} mr\r\nJOIN ${tenantUserTable} u\r\n    ON mr.mentor_id = u.user_id\r\nWHERE mr.org_id = ${orgId}\r\nAND u.status = 'ACTIVE'\r\nAND mr.rating_updated_at >= DATE_TRUNC('month', CURRENT_DATE)\r\n  AND mr.rating_updated_at < DATE_TRUNC('month', CURRENT_DATE + INTERVAL '1 month')\r\n  [[AND user_profile_one_name = (\r\n    SELECT user_profile_one_name\r\n    FROM \"${tenantUserTable}\"\r\n    WHERE {{select_state}}\r\n    LIMIT 1)]]\r\n\r\n    [[AND user_profile_two_name = (\r\n    SELECT user_profile_two_name\r\n    FROM \"${tenantUserTable}\"\r\n    WHERE {{select_district}}\r\n    AND user_profile_two_name IS NOT NULL AND TRIM(user_profile_two_name) <> ''\r\n    LIMIT 1)]]\r\n    \r\n    [[AND user_profile_three_name = (\r\n    SELECT user_profile_three_name\r\n    FROM \"${tenantUserTable}\"\r\n    WHERE {{select_block}}\r\n    LIMIT 1)]]\r\n    \r\n    [[AND user_profile_four_name = (\r\n    SELECT user_profile_four_name\r\n    FROM \"${tenantUserTable}\"\r\n    WHERE {{select_cluster}}\r\n    LIMIT 1)]]\r\n    \r\n    [[AND user_profile_five_name = (\r\n    SELECT user_profile_five_name\r\n    FROM \"${tenantUserTable}\"\r\n    WHERE {{select_school}}\r\n    LIMIT 1)]]\r\n"
+        "query": "SELECT\r\n    ROUND(SUM(EXTRACT(EPOCH FROM (s.completed_at - s.started_at)) / 3600)::numeric, 2) AS \"Total Mentoring Hours\"\r\nFROM ${tenantSessionTable} s\r\nJOIN ${tenantUserTable} u\r\n    ON s.mentor_id = u.user_id\r\nWHERE s.status = 'COMPLETED'\r\n  AND s.deleted_at IS NULL\r\n  AND s.started_at IS NOT NULL\r\n  AND s.completed_at IS NOT NULL\r\n  AND s.completed_at > s.started_at\r\n  AND s.org_id = ${orgId}\r\n  \r\n  [[AND u.user_profile_one_name = (\r\n    SELECT user_profile_one_name\r\n    FROM ${tenantUserTable}\r\n    WHERE {{select_state}}\r\n    LIMIT 1\r\n  )]]\r\n  \r\n  [[AND u.user_profile_two_name = (\r\n    SELECT user_profile_two_name\r\n    FROM ${tenantUserTable}\r\n    WHERE {{select_district}}\r\n      AND user_profile_two_name IS NOT NULL\r\n      AND TRIM(user_profile_two_name) <> ''\r\n    LIMIT 1\r\n  )]]\r\n\r\n  [[AND u.user_profile_three_name = (\r\n    SELECT user_profile_three_name\r\n    FROM ${tenantUserTable}\r\n    WHERE {{select_block}}\r\n    LIMIT 1\r\n  )]]\r\n\r\n  [[AND u.user_profile_four_name = (\r\n    SELECT user_profile_four_name\r\n    FROM ${tenantUserTable}\r\n    WHERE {{select_cluster}}\r\n    LIMIT 1\r\n  )]]\r\n\r\n  [[AND u.user_profile_five_name = (\r\n    SELECT user_profile_five_name\r\n    FROM ${tenantUserTable}\r\n    WHERE {{select_school}}\r\n    LIMIT 1\r\n  )]]\r\n\r\n"
       }
     },
     "display": "scalar",
@@ -142,13 +150,13 @@
     ]
   },
   "dashCards": {
-    "card_id": 104,
+    "card_id": 3169,
     "dashboard_tab_id": null,
-    "id": 96,
+    "id": 1633,
     "parameter_mappings": [
       {
         "parameter_id": "89753241",
-        "card_id": 104,
+        "card_id": 3169,
         "target": [
           "dimension",
           [
@@ -159,7 +167,7 @@
       },
       {
         "parameter_id": "89753242",
-        "card_id": 104,
+        "card_id": 3169,
         "target": [
           "dimension",
           [
@@ -170,7 +178,7 @@
       },
       {
         "parameter_id": "89753243",
-        "card_id": 104,
+        "card_id": 3169,
         "target": [
           "dimension",
           [
@@ -181,7 +189,7 @@
       },
       {
         "parameter_id": "89753244",
-        "card_id": 104,
+        "card_id": 3169,
         "target": [
           "dimension",
           [
@@ -192,7 +200,7 @@
       },
       {
         "parameter_id": "89753245",
-        "card_id": 104,
+        "card_id": 3169,
         "target": [
           "dimension",
           [
@@ -202,10 +210,10 @@
         ]
       }
     ],
-    "col": 0,
-    "row": 66,
-    "size_x": 6,
-    "size_y": 6,
+    "col": 19,
+    "row": 0,
+    "size_x": 5,
+    "size_y": 4,
     "visualization_settings": {}
   }
 }

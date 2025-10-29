@@ -65,6 +65,8 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
     val platform = event.platform
     val startedAt = event.startedAt
     val completedAt = event.completedAt
+    val startDate = event.startDate
+    val endDate = event.endDate
     val recommendedFor = event.recommendedFor
     val categories = event.categories
     val medium = event.medium
@@ -113,6 +115,8 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
     println(s"platform: $platform")
     println(s"startedAt: $startedAt")
     println(s"completedAt: $completedAt")
+    println(s"startDate: $startDate")
+    println(s"endDate: $endDate")
     println(s"recommendedFor: $recommendedFor")
     println(s"categories: $categories")
     println(s"medium: $medium")
@@ -181,18 +185,18 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
 
           val insertSessionQuery =
             s"""
-               |INSERT INTO $tenantSessionTable (id, session_id, mentor_id, name, description, type, status, org_id, org_code, org_name, platform, started_at, completed_at, created_at, updated_at, deleted_at, recommended_for, categories, medium, created_by, updated_by)
-               |VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               |INSERT INTO $tenantSessionTable (id, session_id, mentor_id, name, description, type, status, start_date, end_date, org_id, org_code, org_name, platform, started_at, completed_at, created_at, updated_at, deleted_at, recommended_for, categories, medium, created_by, updated_by)
+               |VALUES (DEFAULT, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                |ON CONFLICT (session_id) DO UPDATE SET
                |  mentor_id = EXCLUDED.mentor_id, name = EXCLUDED.name, description = EXCLUDED.description, type = EXCLUDED.type,
-               |  status = EXCLUDED.status, org_id = EXCLUDED.org_id, org_code = EXCLUDED.org_code, org_name = EXCLUDED.org_name,
+               |  status = EXCLUDED.status, start_date = EXCLUDED.start_date, end_date = EXCLUDED.end_date, org_id = EXCLUDED.org_id, org_code = EXCLUDED.org_code, org_name = EXCLUDED.org_name,
                |  platform = EXCLUDED.platform, started_at = EXCLUDED.started_at, completed_at = EXCLUDED.completed_at,
                |  created_at = EXCLUDED.created_at, updated_at = EXCLUDED.updated_at, deleted_at = EXCLUDED.deleted_at,
                |  recommended_for = EXCLUDED.recommended_for, categories = EXCLUDED.categories, medium = EXCLUDED.medium,
                |  created_by = EXCLUDED.created_by, updated_by = EXCLUDED.updated_by
                |""".stripMargin
 
-          val sessionParams = Seq(sessionId, safeMentorId, sessionName, sessionDesc, sessionType, sessionStatus, safeOrgId, orgCode, orgName, platform, startedAt, completedAt, createdAt, updatedAt, deletedAt, recommendedFor, categories, medium, safeCreatedBy, safeUpdatedBy)
+          val sessionParams = Seq(sessionId, safeMentorId, sessionName, sessionDesc, sessionType, sessionStatus, startDate, endDate, safeOrgId, orgCode, orgName, platform, startedAt, completedAt, createdAt, updatedAt, deletedAt, recommendedFor, categories, medium, safeCreatedBy, safeUpdatedBy)
           postgresUtil.executePreparedUpdate(insertSessionQuery, sessionParams, tenantSessionTable, sessionId.toString)
         } else if (entity == "attendance") {
           val createSessionAttendanceTable = config.createTenantSessionAttendanceTable.replace("@sessionAttendance", tenantSessionAttendanceTable)
@@ -348,6 +352,7 @@ class MentoringStreamFunction(config: MentoringStreamConfig)(implicit val mapTyp
     }
 
   }
+
   private def checkIfValueExists(tableName: String, columnName: String, value: String)(implicit postgresUtil: PostgresUtil): String = {
     if (value == null || value.trim.isEmpty) {
       return ""
