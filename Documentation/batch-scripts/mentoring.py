@@ -93,8 +93,8 @@ def convert_epoch_to_utc(epoch_value):
     try:
         dt = datetime.fromtimestamp(int(epoch_value), tz=timezone.utc)
         return dt.strftime("%Y-%m-%d %H:%M:%S")
-    except Exception as e:
-        print(f"Error converting epoch {epoch_value}: {e}")
+    except (ValueError, OSError, OverflowError) as e:
+        logging.error(f"Error converting epoch {epoch_value}: {e}")
         return None
 
 # ---------------- Sessions ----------------
