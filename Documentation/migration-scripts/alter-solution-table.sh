@@ -1,21 +1,14 @@
 #!/usr/bin/env bash
-# Logs
-export LOG_FILE="/home/user2/Documents/elevate-data/data-pipeline/Documentation/migration-scripts/orgid_update.log"
+set -euo pipefail
 
-# Postgres Config
-export PGHOST="localhost"
-export PGPORT="5432"
-export PGDBNAME="test"
-export PGUSER="postgres"
-export PGPASSWORD="postgres"
-
-# Programs DB Find API Config
-export API_URL="https://qa.elevate-apis.shikshalokam.org/project/v1/admin/dbFind/programs"
-export AUTH_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7ImlkIjoxLCJuYW1lIjoiTmV2aWwiLCJzZXNzaW9uX2lkIjoxOTYyNywib3JnYW5pemF0aW9uX2lkcyI6WyIxIl0sIm9yZ2FuaXphdGlvbl9jb2RlcyI6WyJkZWZhdWx0X2NvZGUiXSwidGVuYW50X2NvZGUiOiJkZWZhdWx0Iiwib3JnYW5pemF0aW9ucyI6W3siaWQiOjEsIm5hbWUiOiJEZWZhdWx0IE9yZ2FuaXphdGlvbiIsImNvZGUiOiJkZWZhdWx0X2NvZGUiLCJkZXNjcmlwdGlvbiI6IkRlZmF1bHQgIFNMIE9yZ2FuaXNhdGlvbiIsInN0YXR1cyI6IkFDVElWRSIsInJlbGF0ZWRfb3JncyI6bnVsbCwidGVuYW50X2NvZGUiOiJkZWZhdWx0IiwibWV0YSI6bnVsbCwiY3JlYXRlZF9ieSI6bnVsbCwidXBkYXRlZF9ieSI6MSwicm9sZXMiOlt7ImlkIjo1LCJ0aXRsZSI6Im1lbnRlZSIsImxhYmVsIjpudWxsLCJ1c2VyX3R5cGUiOjAsInN0YXR1cyI6IkFDVElWRSIsIm9yZ2FuaXphdGlvbl9pZCI6MSwidmlzaWJpbGl0eSI6IlBVQkxJQyIsInRlbmFudF9jb2RlIjoiZGVmYXVsdCIsInRyYW5zbGF0aW9ucyI6bnVsbH0seyJpZCI6MjUsInRpdGxlIjoibGVhcm5lciIsImxhYmVsIjoiTGVhcm5lciIsInVzZXJfdHlwZSI6MCwic3RhdHVzIjoiQUNUSVZFIiwib3JnYW5pemF0aW9uX2lkIjoxLCJ2aXNpYmlsaXR5IjoiUFVCTElDIiwidGVuYW50X2NvZGUiOiJkZWZhdWx0IiwidHJhbnNsYXRpb25zIjpudWxsfV19XX0sImlhdCI6MTc2MTQ4MTczOSwiZXhwIjoxNzYxNTY4MTM5fQ.u2P0gq240T1YgdRU6QcJgJSODp0DJ_YbB87U4WPrWfE"   # set via environment or secret manager
-export APP_NAME="elevatedata"
-
-# Table Names
-export SOLUTION_TABLE="local_solutions"
+# --- Load Configuration ---
+CONFIG_FILE="/app/Documentation/migration-scripts/common-config.env"
+if [ -f "$CONFIG_FILE" ]; then
+  source "$CONFIG_FILE"
+else
+  echo "❌ Config file not found: $CONFIG_FILE" >&2
+  exit 1
+fi
 
 # --- Logging setup ---
 mkdir -p "$(dirname "$LOG_FILE")"
