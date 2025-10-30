@@ -86,11 +86,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
       val storedTableIds = TrieMap.empty[(Int, String), Int]
       val storedColumnIds = TrieMap.empty[(Int, String), Int]
       val programName = postgresUtil.fetchData(s"""SELECT entity_name from $metaDataTable where entity_id = '$targetedProgramId'""").collectFirst { case map: Map[_, _] => map.get("entity_name").map(_.toString).getOrElse("") }.getOrElse("").take(80)
-      val orgName = postgresUtil.fetchData(s"""SELECT org_name from "$observationStatusTable" where solution_id = '$targetedSolutionId' group by org_name limit 1""") match {
-        case List(map: Map[_, _]) => map.get("org_name").map(_.toString).getOrElse("")
-        case _ => ""
-      }
-
+      val orgId = postgresUtil.fetchData(s"""SELECT org_id FROM $solutions WHERE program_id = '$targetedProgramId' AND org_id IS NOT NULL AND TRIM(org_id) <> '' LIMIT 1 """).collectFirst { case map: Map[_, _] => map.getOrElse("org_id", "").toString }.getOrElse("")
       val query =
         s"SELECT program_description, external_id, program_external_id, description FROM $solutionTable WHERE solution_id = '$targetedSolutionId'"
       val resultMap = postgresUtil.fetchData(query).collectFirst { case map: Map[_, _] => map }.getOrElse(Map.empty)
@@ -100,7 +96,7 @@ class ObservationMetabaseDashboardFunction(config: ObservationMetabaseDashboardC
       val programExternalId = resultMap.get("program_external_id").map(_.toString).getOrElse("")
       val solutionDescription = resultMap.get("description").map(_.toString).getOrElse("")
 
-      val programCollectionName = s"$programName"
+      val programCollectionName = s"$programName [org : $orgId]"
       val solutionCollectionName = s"$solutionName [Observation]"
 
       var tabList: List[String] = List()
