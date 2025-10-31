@@ -485,10 +485,10 @@ def process_orgMentorRatings():
 # ---------------- Main ----------------
 def main():
     process_sessions()
-    #process_attendance()
-    #process_connections()
-    #process_connection_requests()
-    #process_orgMentorRatings()
+    process_attendance()
+    process_connections()
+    process_connection_requests()
+    process_orgMentorRatings()
 
 if __name__ == "__main__":
     main()

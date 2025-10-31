@@ -178,7 +178,7 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
     }
 
     def createCollectionAndDashboardForOrg(orgId: Int, tenantCode: String, orgName: String): Unit = {
-      val collectionName = s"Mentoring Report [org $orgId : $orgName]" //we have to change collection name to org name + id bcz it may collapse with same org names
+      val collectionName = s"Mentoring Report [org : $orgName ($orgId)]"
       val collectionDescription = s"This report has access to a dedicated dashboard offering insights and metrics specific to their own org. \n\nCollection For: Org Admin \n\nTenant: $tenantCode"
       val collectionId = Utils.checkAndCreateCollection(collectionName, collectionDescription, metabaseUtil)
       if (collectionId != -1) {
