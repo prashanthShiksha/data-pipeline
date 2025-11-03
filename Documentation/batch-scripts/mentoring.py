@@ -86,6 +86,17 @@ def update_last_run(entity: str, ts: datetime):
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
 
+# ---------------- Epoch to UTC ----------------
+def convert_epoch_to_utc(epoch_value):
+    if not epoch_value:
+        return None
+    try:
+        dt = datetime.fromtimestamp(int(epoch_value), tz=timezone.utc)
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    except (ValueError, OSError, OverflowError) as e:
+        logging.error(f"Error converting epoch {epoch_value}: {e}")
+        return None
+
 # ---------------- Sessions ----------------
 def process_sessions():
     logging.info("Processing sessions...")
@@ -99,7 +110,7 @@ def process_sessions():
     if last_run is None:
         cur_mentoring.execute("""
             SELECT id, mentor_id, title, description, type, status,
-                   mentor_organization_id, meeting_info, started_at, completed_at,
+                   mentor_organization_id, start_date, end_date, meeting_info, started_at, completed_at,
                    created_at, updated_at, deleted_at, recommended_for,
                    categories, medium, created_by, updated_by
             FROM sessions
@@ -107,7 +118,7 @@ def process_sessions():
     else:
         cur_mentoring.execute("""
             SELECT id, mentor_id, title, description, type, status,
-                   mentor_organization_id, meeting_info, started_at, completed_at,
+                   mentor_organization_id, start_date, end_date, meeting_info, started_at, completed_at,
                    created_at, updated_at, deleted_at, recommended_for,
                    categories, medium, created_by, updated_by
             FROM sessions
@@ -120,7 +131,7 @@ def process_sessions():
     for row in rows:
         (
             session_id, mentor_id, title, description, type, status,
-            mentor_organization_id, meeting_info, started_at, completed_at,
+            mentor_organization_id, start_date, end_date, meeting_info, started_at, completed_at,
             created_at, updated_at, deleted_at, recommended_for,
             categories, medium, created_by, updated_by
         ) = row
@@ -133,8 +144,13 @@ def process_sessions():
                 else:
                     meeting_data = pyjson.loads(meeting_info)
                     platform = meeting_data.get("platform")
+                if not platform or str(platform).strip().upper() == "OFF":
+                    platform = "Not Provided"
+
             except Exception as e:
                 logging.error(f"Error parsing meeting_info for session {session_id}: {e}")
+        else:
+            platform = "Not Provided"
 
         org_id, org_name, org_code = None, None, None
         if mentor_organization_id:
@@ -160,6 +176,9 @@ def process_sessions():
             org_row = cur_users.fetchone()
             tenant_code = org_row[0] if org_row else None
 
+        start_date_ts = convert_epoch_to_utc(start_date)
+        end_date_ts = convert_epoch_to_utc(end_date)
+
         event = {
             "eventType": "create",
             "entity": "session",
@@ -170,6 +189,8 @@ def process_sessions():
             "tenant_code": tenant_code,
             "type": type,
             "status": status,
+            "start_date": start_date_ts,
+            "end_date": end_date_ts,
             "org_id": str(org_id) if org_id is not None else None,
             "org_code": org_code,
             "org_name": org_name,

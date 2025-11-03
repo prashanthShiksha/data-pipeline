@@ -76,7 +76,7 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
       return
     }
 
-    if (filterSync.nonEmpty){
+    if (filterSync.nonEmpty) {
       val searchTableResponse = metabaseUtil.searchTable(filterTable, databaseId)
       val filterTableId: Int = extractTableId(searchTableResponse)
       if (filterTableId != -1) {
@@ -178,7 +178,7 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
     }
 
     def createCollectionAndDashboardForOrg(orgId: Int, tenantCode: String, orgName: String): Unit = {
-      val collectionName = s"Mentoring Report [org: $orgName]"
+      val collectionName = s"Mentoring Report [org : $orgName ($orgId)]"
       val collectionDescription = s"This report has access to a dedicated dashboard offering insights and metrics specific to their own org. \n\nCollection For: Org Admin \n\nTenant: $tenantCode"
       val collectionId = Utils.checkAndCreateCollection(collectionName, collectionDescription, metabaseUtil)
       if (collectionId != -1) {
@@ -276,30 +276,4 @@ class MentoringMetabaseDashboardFunction(config: MentoringMetabaseDashboardConfi
     println(s"***************** End of Processing the Mentoring Metabase Dashboard Event with = ${event.tenantCode} *****************")
   }
 
-  private def validateCollection(collectionName: String, reportFor: String, reportId: Option[String] = None): (Boolean, Int) = {
-    val mapper = new ObjectMapper()
-    println(s">>> Checking Metabase API for collection: $collectionName")
-    try {
-      val collections = mapper.readTree(metabaseUtil.listCollections())
-      val result = collections match {
-        case arr: ArrayNode =>
-          arr.asScala.find { c =>
-              val name = Option(c.get("name")).map(_.asText).getOrElse("")
-              val desc = Option(c.get("description")).map(_.asText).getOrElse("")
-              val matchesName = name == collectionName
-              val matchesReportFor = desc.contains(s"Collection For: $reportFor")
-              val isMatch = if (reportId.isEmpty) matchesName && matchesReportFor else matchesName && matchesReportFor
-              isMatch
-            }.map(c => (true, Option(c.get("id")).map(_.asInt).getOrElse(0)))
-            .getOrElse((false, 0))
-        case _ => (false, 0)
-      }
-      println(s">>> API result: $result")
-      result
-    } catch {
-      case e: Exception =>
-        println(s"[ERROR] API or JSON failure: ${e.getMessage}")
-        (false, 0)
-    }
-  }
 }

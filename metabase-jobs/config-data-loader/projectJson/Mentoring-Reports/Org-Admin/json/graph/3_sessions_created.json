@@ -1,6 +1,6 @@
 {
   "questionCard": {
-    "name": "Session Type",
+    "name": "Sessions Created ",
     "collection_id": 22,
     "dataset_query": {
       "database": 3,
@@ -78,14 +78,29 @@
             "options": null
           }
         },
-        "query": "SELECT \r\n    s.type AS \"Session Type\",\r\n    COUNT(*) AS \"Total Sessions\"\r\nFROM ${tenantSessionTable} s\r\nJOIN ${tenantUserTable} u\r\n    ON s.mentor_id = u.user_id\r\nWHERE s.org_id = ${orgId}\r\nAND s.deleted_at IS NULL\r\n    [[AND user_profile_one_name = (\r\n    SELECT user_profile_one_name\r\n    FROM \"${tenantUserTable}\"\r\n    WHERE {{select_state}}\r\n    LIMIT 1)]]\r\n\r\n    [[AND user_profile_two_name = (\r\n    SELECT user_profile_two_name\r\n    FROM \"${tenantUserTable}\"\r\n    WHERE {{select_district}}\r\n    AND user_profile_two_name IS NOT NULL AND TRIM(user_profile_two_name) <> ''\r\n    LIMIT 1)]]\r\n    \r\n    [[AND user_profile_three_name = (\r\n    SELECT user_profile_three_name\r\n    FROM \"${tenantUserTable}\"\r\n    WHERE {{select_block}}\r\n    LIMIT 1)]]\r\n    \r\n    [[AND user_profile_four_name = (\r\n    SELECT user_profile_four_name\r\n    FROM \"${tenantUserTable}\"\r\n    WHERE {{select_cluster}}\r\n    LIMIT 1)]]\r\n    \r\n    [[AND user_profile_five_name = (\r\n    SELECT user_profile_five_name\r\n    FROM \"${tenantUserTable}\"\r\n    WHERE {{select_school}}\r\n    LIMIT 1)]]\r\nGROUP BY s.type\r\nORDER BY s.type;\r\n"
+        "query": "SELECT \r\n    s.type AS \"Session Type\",\r\n    CASE \r\n        WHEN s.mentor_id != s.created_by THEN 'Created by Session Manager'\r\n        ELSE 'Created by Mentor'\r\n    END AS \"Session Ownership\",\r\n    COUNT(*) AS \"Total Sessions\"\r\nFROM ${tenantSessionTable} s\r\nJOIN ${tenantUserTable} u\r\n    ON s.mentor_id = u.user_id\r\nWHERE s.status IN ('COMPLETED', 'PUBLISHED', 'LIVE')\r\n  AND s.org_id = ${orgId}\r\n  AND s.deleted_at IS NULL\r\n\r\n  [[AND user_profile_one_name = (\r\n    SELECT user_profile_one_name\r\n    FROM ${tenantUserTable}\r\n    WHERE {{select_state}}\r\n    LIMIT 1\r\n  )]]\r\n\r\n  [[AND user_profile_two_name = (\r\n    SELECT user_profile_two_name\r\n    FROM ${tenantUserTable}\r\n    WHERE {{select_district}}\r\n      AND user_profile_two_name IS NOT NULL\r\n      AND TRIM(user_profile_two_name) <> ''\r\n    LIMIT 1\r\n  )]]\r\n\r\n  [[AND user_profile_three_name = (\r\n    SELECT user_profile_three_name\r\n    FROM ${tenantUserTable}\r\n    WHERE {{select_block}}\r\n    LIMIT 1\r\n  )]]\r\n\r\n  [[AND user_profile_four_name = (\r\n    SELECT user_profile_four_name\r\n    FROM ${tenantUserTable}\r\n    WHERE {{select_cluster}}\r\n    LIMIT 1\r\n  )]]\r\n\r\n  [[AND user_profile_five_name = (\r\n    SELECT user_profile_five_name\r\n    FROM ${tenantUserTable}\r\n    WHERE {{select_school}}\r\n    LIMIT 1\r\n  )]]\r\n\r\nGROUP BY s.type, 2\r\nORDER BY s.type, 2;\r\n"
       }
     },
     "display": "bar",
     "visualization_settings": {
+      "series_settings": {
+        "Created by Session Manager": {
+          "color": "#FBE499"
+        },
+        "Assigned": {
+          "color": "#FBE499"
+        },
+        "Created by Mentor": {
+          "color": "#C7EAEA"
+        }
+      },
       "graph.dimensions": [
-        "Session Type"
+        "Session Type",
+        "Session Ownership"
       ],
+      "graph.label_value_formatting": "auto",
+      "graph.series_order_dimension": null,
+      "graph.series_order": null,
       "graph.metrics": [
         "Total Sessions"
       ]
@@ -159,13 +174,13 @@
     ]
   },
   "dashCards": {
-    "card_id": 102,
+    "card_id": 3005,
     "dashboard_tab_id": null,
-    "id": 90,
+    "id": 1472,
     "parameter_mappings": [
       {
         "parameter_id": "89753241",
-        "card_id": 102,
+        "card_id": 3005,
         "target": [
           "dimension",
           [
@@ -176,7 +191,7 @@
       },
       {
         "parameter_id": "89753242",
-        "card_id": 102,
+        "card_id": 3005,
         "target": [
           "dimension",
           [
@@ -187,7 +202,7 @@
       },
       {
         "parameter_id": "89753243",
-        "card_id": 102,
+        "card_id": 3005,
         "target": [
           "dimension",
           [
@@ -198,7 +213,7 @@
       },
       {
         "parameter_id": "89753244",
-        "card_id": 102,
+        "card_id": 3005,
         "target": [
           "dimension",
           [
@@ -209,7 +224,7 @@
       },
       {
         "parameter_id": "89753245",
-        "card_id": 102,
+        "card_id": 3005,
         "target": [
           "dimension",
           [
@@ -219,9 +234,9 @@
         ]
       }
     ],
-    "col": 8,
+    "col": 0,
     "row": 12,
-    "size_x": 16,
+    "size_x": 12,
     "size_y": 7,
     "visualization_settings": {}
   }

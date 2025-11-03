@@ -212,9 +212,9 @@
         ]
       }
     ],
-    "col": 16,
+    "col": 10,
     "row": 0,
-    "size_x": 8,
+    "size_x": 4,
     "size_y": 4,
     "visualization_settings": {}
   }

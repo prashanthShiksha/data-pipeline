@@ -79,6 +79,8 @@ class MentoringStreamConfig(override val config: Config) extends BaseJobConfig(c
        |    description TEXT,
        |    type TEXT,
        |    status TEXT,
+       |    start_date TIMESTAMPTZ,
+       |    end_date TIMESTAMPTZ,
        |    org_id INT,
        |    org_code TEXT,
        |    org_name TEXT,
