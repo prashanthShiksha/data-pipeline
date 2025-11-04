@@ -158,8 +158,7 @@ services:
       - ./config_files/metabase-mentoring-dashboard.conf:/app/metabase-jobs/mentoring-dashboard-creator/src/main/resources/metabase-mentoring-dashboard.conf
       - ./config_files/config.ini:/app/Documentation/batch-scripts/config.ini
       - ./logs:/app/logs
-    entrypoint: ["/bin/bash", "-c", "echo >> /app/Documentation/batch-scripts/crontab && crontab /app/Documentation/batch-scripts/crontab && cron && tail -f /dev/null"]
-
+    entrypoint: ["/bin/bash", "-c", "/app/Documentation/Docker-setup/submit-jobs.sh jobmanager && sleep infinity"]
 # Networks
 networks:
   elevate_net:
