@@ -15,7 +15,7 @@ RUN apt update && apt install -y \
     jq \
     nano \
     postgresql postgresql-client \
-    python3-pip \
+    cron \
     && rm -rf /var/lib/apt/lists/*
 
 # Set Java environment variables
@@ -43,10 +43,21 @@ RUN MAVEN_VERSION=$(curl -s https://maven.apache.org/download.cgi | grep -oP 'ap
 ENV MAVEN_HOME=/usr/local/maven
 ENV PATH=$MAVEN_HOME/bin:$PATH
 
+# Install Python 3.12.6
+RUN apt update && apt install -y software-properties-common curl \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt update \
+    && apt install -y python3.12 python3.12-venv \
+    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 2 \
+    && curl -sS https://bootstrap.pypa.io/get-pip.py | python3
+
+ENV PATH="/usr/local/bin:$PATH"
 
 WORKDIR /app
 
 COPY . /app
+
+RUN pip install --no-cache-dir -r /app/Documentation/batch-scripts/requirements.txt
 
 RUN mvn clean install -DskipTests
 

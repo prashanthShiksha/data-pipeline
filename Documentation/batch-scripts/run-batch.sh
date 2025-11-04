@@ -3,8 +3,7 @@ source /etc/profile
 export TZ=Asia/Kolkata
 date
 
-VENV_PATH="/home/user2/Documents/elevate-new/data-pipeline/myvenv"
-SCRIPT_PATH="/home/user2/Documents/elevate-new/data-pipeline/Documentation/batch-scripts/mentoring.py"
+SCRIPT_PATH="/app/Documentation/batch-scripts/mentoring.py"
 
 echo "RUNNING JOB"
 
@@ -14,7 +13,7 @@ echo "====================================="
 echo "Mentoring Batch script has triggered"
 
 # Correct variable usage with $
-. "$VENV_PATH/bin/activate" && python3 "$SCRIPT_PATH"
+python3 "$SCRIPT_PATH"
 
 echo "Mentoring Batch script has finished"
 echo "*************************************"
