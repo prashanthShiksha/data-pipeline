@@ -17,9 +17,13 @@ RUN apt update && apt install -y \
     postgresql postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Set Java environment variables
+# Set Java environment variables dynamically (works on both amd64 and arm64)
+RUN export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac)))) && \
+    echo "JAVA_HOME=$JAVA_HOME" >> /etc/environment && \
+    echo "PATH=\$JAVA_HOME/bin:\$PATH" >> /etc/environment
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 ENV PATH="$JAVA_HOME/bin:$PATH"
+
 
 # Download and install Scala
 WORKDIR /usr/local
