@@ -1,0 +1,57 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:name: Docker Image CI
+
+on:
+  push:
+    branches: 
+      - "**"   # runs on all branches
+  pull_request:
+    branches: 
+      - "**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout your repo code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Docker Buildx (optional but recommended for modern builds)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build Docker image with branch-based tag
+      - name: Build Docker Image
+        run: |
+          # Replace slashes in branch name (e.g., feature/new -> feature-new)
+          BRANCH_NAME=${GITHUB_REF_NAME//\//-}
+
+          echo "🔹 Building image for branch: $BRANCH_NAME"
+
+          docker build \
+            --file Dockerfile \
+            --tag my-image-name:${BRANCH_NAME}-$(date +%s) \
+            .
+
+      # Optional: list built images for verification
+      - name: List built images
+        run: docker images | head
+
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
