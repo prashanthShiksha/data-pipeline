@@ -42,7 +42,7 @@ class MentoringStreamFunctionTestSpec extends BaseTestSpec {
   }
 
   def initialize(): Unit = {
-    when(mockKafkaUtil.kafkaJobRequestSource[MentoringEvent](jobConfig.mentoringInputTopic, jobConfig.mentoringConsumerGroup))
+    when(mockKafkaUtil.kafkaJobRequestSource[MentoringEvent](jobConfig.mentoringInputTopic))
       .thenReturn(new MentoringEventSource)
     when(mockKafkaUtil.kafkaStringSink(jobConfig.mentoringOutputTopic))
       .thenReturn(new GenerateMentoringSink)

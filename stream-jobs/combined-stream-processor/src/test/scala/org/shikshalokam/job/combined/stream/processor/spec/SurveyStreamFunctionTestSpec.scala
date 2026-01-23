@@ -42,7 +42,7 @@ class SurveyStreamFunctionTestSpec extends BaseTestSpec {
   }
 
   def initialize(): Unit = {
-    when(mockKafkaUtil.kafkaJobRequestSource[SurveyEvent](jobConfig.surveyInputTopic, jobConfig.surveyConsumerGroup))
+    when(mockKafkaUtil.kafkaJobRequestSource[SurveyEvent](jobConfig.surveyInputTopic))
       .thenReturn(new SurveyEventSource)
     when(mockKafkaUtil.kafkaStringSink(jobConfig.surveyOutputTopic))
       .thenReturn(new GenerateSurveySink)
