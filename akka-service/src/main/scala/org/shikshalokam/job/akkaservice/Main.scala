@@ -11,11 +11,11 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.Await
 
 object Main extends App {
-  implicit val system = ActorSystem("akka-http-server")
+  implicit val system = ActorSystem("akka-http-server", AppConfig.config)
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  private val config = ConfigFactory.load()
+  private val config = AppConfig.config
   private val host = config.getString("akka.http.host")
   private val port = config.getInt("akka.http.port")
 

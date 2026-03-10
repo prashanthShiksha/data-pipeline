@@ -132,7 +132,7 @@ services:
     image: shikshalokamqa/elevate-data:latest
     restart: always
     container_name: elevate-data
-    command: /jobmanager-entrypoint.sh
+    command: python3 jobmanager-entrypoint.py
     ports:
       - "8083:8083"
     depends_on:
@@ -142,8 +142,7 @@ services:
       - taskmanager
       - metabase
     volumes:
-      - /home/user2/Documents/elevate-data-optimised/data-pipeline/Documentation/Docker-setup/jobmanager-entrypoint.sh:/jobmanager-entrypoint.sh
-      - /home/user2/Documents/elevate-data-optimised/data-pipeline/Documentation/Docker-setup/config.env:/job-configs/config.env
+      - /home/user2/Documents/elevate-data-optimised/data-pipeline/Documentation/Docker-setup/jobmanager-entrypoint.py:/jobmanager-entrypoint.py
       - /home/user2/Documents/elevate-data-optimised/data-pipeline/unified-pipeline.conf:/job-configs/unified-pipeline.conf
     networks:
       - elevate_net

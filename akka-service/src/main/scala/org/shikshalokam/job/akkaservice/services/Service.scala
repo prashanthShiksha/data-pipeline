@@ -20,14 +20,14 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
-import com.typesafe.config.ConfigFactory
+import org.shikshalokam.job.akkaservice.AppConfig
 
 object Service {
 
-  implicit val system: ActorSystem = ActorSystem("user-upload-system")
+  implicit val system: ActorSystem = ActorSystem("user-upload-system", AppConfig.config)
   implicit val materializer: Materializer = Materializer(system)
 
-  private val config = ConfigFactory.load()
+  private val config = AppConfig.config
   private val sinkDirectory = config.getString("file.sinkDirectory")
   private val flinkBase = config.getString("services.flink.url")
   private val metaUrl = s"${config.getString("metabase.url")}/api/health"
