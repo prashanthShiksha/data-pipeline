@@ -566,7 +566,7 @@ class MetabaseUtil(url: String, metabaseUsername: String, metabasePassword: Stri
 
   /**
    * Method to search a table in Metabase
-    * @param tableName
+   * @param tableName
    * @param tableDbId
    * @return JSON string representing the status of the search table
    */
